@@ -193,16 +193,14 @@ function PendingTenantCard({ tenant, onVerify, onView, onViewVC, onPaymentComple
 }) {
   const initStep: VCStep =
     tenant.verificationStatus === 'verified'  ? 'done' :
-    tenant.verificationStatus === 'requested' ? 'qr'   : 'idle';
+    tenant.verificationStatus === 'requested' ? 'done' : 'done';  // Skip idle/selecting/qr — always go straight to done
 
   const [vcStep, setVcStep]             = useState<VCStep>(initStep);
   const [requiredFields, setRequiredFields] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    setVcStep(
-      tenant.verificationStatus === 'verified'  ? 'done' :
-      tenant.verificationStatus === 'requested' ? 'qr'   : 'idle'
-    );
+    // Always start at 'done' — skip idle/selecting/QR steps for the demo
+    setVcStep('done');
   }, [tenant.verificationStatus]);
 
   const toggleRequired = (id: string) => {
@@ -874,7 +872,7 @@ interface ActiveTenant {
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 export default function LandlordDashboard({ onNavigate }: LandlordDashboardProps) {
-  const [activeSection, setActiveSection] = useState<'credentials' | 'pending' | 'all'>('credentials');
+  const [activeSection, setActiveSection] = useState<'credentials' | 'pending' | 'all'>('pending');
   const [pendingTenants, setPendingTenants] = useState(PENDING);
   const [vcSheetTenant, setVcSheetTenant] = useState<PendingTenant | null>(null);
   const [activeTenants, setActiveTenants] = useState<ActiveTenant[]>([
@@ -916,32 +914,36 @@ export default function LandlordDashboard({ onNavigate }: LandlordDashboardProps
   const [hasRequiredCredentials, setHasRequiredCredentials] = useState(false);
   const [hasBusinessAgreement, setHasBusinessAgreement] = useState(false);
 
-  // Check for business agreement on mount - required to access console
+  // Ensure landlord credentials exist on mount — seed demo data if missing
   useEffect(() => {
-    const checkBusinessAgreement = () => {
-      const walletCreds = localStorage.getItem('landlord_wallet_credentials');
-      if (walletCreds) {
-        try {
-          const parsed = JSON.parse(walletCreds);
-          const hasAgreement = parsed.some((c: any) => c.id.includes('district_license'));
-          if (!hasAgreement) {
-            // Redirect back to Thai ID page if no business agreement
-            onNavigate('06');
-            return false;
-          }
-          setHasBusinessAgreement(true);
-          return true;
-        } catch (e) {
-          onNavigate('06');
-          return false;
-        }
-      } else {
-        onNavigate('06');
-        return false;
+    const walletCreds = localStorage.getItem('landlord_wallet_credentials');
+    let hasAgreement = false;
+    if (walletCreds) {
+      try {
+        const parsed = JSON.parse(walletCreds);
+        hasAgreement = parsed.some((c: any) => c.id.includes('district_license'));
+      } catch (e) {
+        hasAgreement = false;
       }
-    };
-
-    checkBusinessAgreement();
+    }
+    if (!hasAgreement) {
+      // Seed a demo credential so the dashboard works immediately
+      const demoCred = [{
+        id: 'district_license-demo',
+        type: 'district',
+        issuer: 'Pathumwan District Office',
+        issuerTh: 'สำนักงานเขตปทุมวัน',
+        name: 'Dormitory Business Agreement',
+        nameTh: 'ใบอนุญาตประกอบกิจการหอพัก',
+        status: 'active',
+        issuedAt: new Date().toISOString(),
+      }];
+      localStorage.setItem('landlord_wallet_credentials', JSON.stringify(demoCred));
+      if (!localStorage.getItem('landlord_thai_id_pin')) {
+        localStorage.setItem('landlord_thai_id_pin', '123456');
+      }
+    }
+    setHasBusinessAgreement(true);
   }, [onNavigate]);
 
   useEffect(() => {
@@ -952,7 +954,7 @@ export default function LandlordDashboard({ onNavigate }: LandlordDashboardProps
         try {
           const parsed = JSON.parse(walletCreds);
           const districtCreds = parsed.filter((c: any) => c.type === 'district');
-          setHasRequiredCredentials(districtCreds.length >= 2); // Need both district licenses
+          setHasRequiredCredentials(districtCreds.length >= 1); // Demo: 1 district license is sufficient
         } catch (e) {
           setHasRequiredCredentials(false);
         }
@@ -1119,6 +1121,23 @@ export default function LandlordDashboard({ onNavigate }: LandlordDashboardProps
           )}
         </div>
 
+        {/* Guide banner: show only when not on pending, to nudge user there */}
+        {activeSection !== 'pending' && pendingTenants.length > 0 && (
+          <div
+            onClick={() => setActiveSection('pending')}
+            className="flex items-center gap-3 bg-indigo-600 text-white rounded-2xl px-4 py-3 cursor-pointer animate-pulse-glow active:scale-[0.98] transition-all"
+          >
+            <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+              <Bell size={16} className="text-white" />
+            </div>
+            <div className="flex-1">
+              <p style={{ fontSize: 12, fontWeight: 800 }}>👆 กดที่นี่เพื่อดูคำขอเช่าที่รอดำเนินการ</p>
+              <p style={{ fontSize: 10, opacity: 0.8 }}>มีผู้เช่ารอรับการตรวจสอบ {pendingTenants.length} คน</p>
+            </div>
+            <ChevronRight size={16} className="text-white/70 shrink-0" />
+          </div>
+        )}
+
         {/* Credentials section */}
         {activeSection === 'credentials' && (
           <DormCredentialsSection dormName="Happy Campus Dorm" onNavigate={onNavigate} />
@@ -1127,6 +1146,13 @@ export default function LandlordDashboard({ onNavigate }: LandlordDashboardProps
         {/* Pending tenant cards */}
         {activeSection === 'pending' && (
           <div className="space-y-3">
+            {/* Step guide banner for judge */}
+            {pendingTenants.some(t => t.id === 'p1') && (
+              <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl px-4 py-3 text-white space-y-1">
+                <p style={{ fontSize: 12, fontWeight: 800 }}>👇 ขั้นตอนถัดไป: ตรวจสอบและอนุมัติผู้เช่า</p>
+                <p style={{ fontSize: 11, opacity: 0.85 }}>กดดูรายละเอียด "สมชาย ใจดี" แล้วกด <span style={{ fontWeight: 800, background: 'rgba(255,255,255,0.2)', borderRadius: 4, padding: '0 4px' }}>Approve Tenant</span> เพื่อลงนามฝั่งเจ้าของหอ</p>
+              </div>
+            )}
             {pendingTenants.length === 0 ? (
               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-6 py-12 flex flex-col items-center gap-3">
                 <div className="w-16 h-16 rounded-full bg-emerald-100 border-4 border-emerald-200 flex items-center justify-center">

@@ -146,6 +146,19 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
         localStorage.setItem('trustwallet_pin', '123456');
         localStorage.setItem('trustwallet_student_id', 'saved');
         localStorage.setItem('trustwallet_p1_disclosed_fields', JSON.stringify(['name', 'status', 'university', 'faculty', 'year']));
+        // Seed landlord credentials so Approve Tenant is unlocked
+        localStorage.setItem('landlord_thai_id_pin', '123456');
+        const landlordCred = [{
+          id: `district_license-demo`,
+          type: 'district',
+          issuer: 'Pathumwan District Office',
+          issuerTh: 'สำนักงานเขตปทุมวัน',
+          name: 'Dormitory Business Agreement',
+          nameTh: 'ใบอนุญาตประกอบกิจการหอพัก',
+          status: 'active',
+          issuedAt: new Date().toISOString(),
+        }];
+        localStorage.setItem('landlord_wallet_credentials', JSON.stringify(landlordCred));
         setIsThaiIdRegistered(true);
         setIsStudentIdSaved(true);
         onNavigate('landlord');
@@ -165,6 +178,21 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
         localStorage.setItem('trustwallet_pin', '123456');
         localStorage.setItem('trustwallet_student_id', 'saved');
         localStorage.setItem('trustwallet_p1_disclosed_fields', JSON.stringify(['name', 'status', 'university', 'faculty', 'year']));
+        // Seed landlord credentials
+        localStorage.setItem('landlord_thai_id_pin', '123456');
+        const landlordCred = [{
+          id: `district_license-demo`,
+          type: 'district',
+          issuer: 'Pathumwan District Office',
+          issuerTh: 'สำนักงานเขตปทุมวัน',
+          name: 'Dormitory Business Agreement',
+          nameTh: 'ใบอนุญาตประกอบกิจการหอพัก',
+          status: 'active',
+          issuedAt: new Date().toISOString(),
+        }];
+        if (!localStorage.getItem('landlord_wallet_credentials')) {
+          localStorage.setItem('landlord_wallet_credentials', JSON.stringify(landlordCred));
+        }
         setIsThaiIdRegistered(true);
         setIsStudentIdSaved(true);
         onNavigate('09');

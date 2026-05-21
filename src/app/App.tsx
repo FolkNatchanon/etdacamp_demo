@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PortalLanding from './components/PortalLanding';
 import NavigableFrame1 from './components/NavigableFrame1';
 import StudentShell from './components/StudentShell';
@@ -30,6 +30,24 @@ import {
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<string>('00');
   const [shellTab, setShellTab] = useState<ShellTab>('home');
+
+  // Clear all demo state every time a new tab is opened
+  useEffect(() => {
+    const DEMO_KEYS = [
+      'trustwallet_registered',
+      'trustwallet_pin',
+      'trustwallet_contract_signed',
+      'trustwallet_p1_disclosed_fields',
+      'trustwallet_student_id',
+      'trustwallet_show_documents',
+      'landlord_thai_id_pin',
+      'landlord_wallet_credentials',
+      'selected_dorm_gender',
+      'selected_dorm_name',
+      'selected_room',
+    ];
+    DEMO_KEYS.forEach(key => localStorage.removeItem(key));
+  }, []); // empty deps = runs once on mount (= once per new tab)
 
   const navigate = (screen: string, tab?: ShellTab) => {
     if (tab) setShellTab(tab);

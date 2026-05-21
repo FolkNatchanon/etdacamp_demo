@@ -764,6 +764,18 @@ function MainCredentialsView({ onBack, onNavigate }: { onBack: () => void; onNav
     };
   }, []);
 
+  // Auto-request credentials when component mounts and none exist yet
+  useEffect(() => {
+    const creds = localStorage.getItem('landlord_wallet_credentials');
+    if (!creds || JSON.parse(creds).length === 0) {
+      // Kick off the request automatically after a short delay
+      setTimeout(() => {
+        handleRequestBusinessAgreement();
+      }, 800);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleRequestBusinessAgreement = () => {
     setRequestStatus('requesting');
 
@@ -917,23 +929,23 @@ function MainCredentialsView({ onBack, onNavigate }: { onBack: () => void; onNav
                   )}
                 </div>
               </div>
-              <button
-                onClick={handleRequestBusinessAgreement}
-                disabled={requestStatus !== 'idle'}
-                className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {requestStatus === 'requesting' || requestStatus === 'pending' ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    {requestStatus === 'requesting' ? 'กำลังส่งคำขอ...' : 'รอการอนุมัติ...'}
-                  </>
-                ) : (
-                  <>
-                    <Download size={18} />
-                    ขอใบอนุญาตจากสำนักงานเขต
-                  </>
-                )}
-              </button>
+              {/* Auto-requesting — show status only, no manual button */}
+              {requestStatus !== 'idle' && (
+                <div className={`flex items-center gap-2 justify-center py-3 rounded-xl border ${
+                  requestStatus === 'requesting' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                  requestStatus === 'pending'    ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                  'bg-gray-50 border-gray-200 text-gray-500'
+                }`}>
+                  {(requestStatus === 'requesting' || requestStatus === 'pending') &&
+                    <Loader2 size={15} className="animate-spin shrink-0" />
+                  }
+                  <p style={{ fontSize: 12, fontWeight: 600 }}>
+                    {requestStatus === 'requesting' ? 'กำลังส่งคำขออัตโนมัติ...' :
+                     requestStatus === 'pending'    ? 'สำนักงานเขตกำลังพิจารณา...' :
+                     'รอผล...'}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -980,19 +992,11 @@ export default function LandlordThaiIDWallet({ onNavigate }: LandlordThaiIDWalle
   }
 
   if (step === 'consent') {
+    // Skip QR step — go straight to linking
     return (
       <ConsentScreen
-        onAllow={() => setStep('qr')}
+        onAllow={() => setStep('linking')}
         onDeny={() => onNavigate('00')}
-      />
-    );
-  }
-
-  if (step === 'qr') {
-    return (
-      <QRScreen
-        onScanned={() => setStep('linking')}
-        onBack={() => setStep('consent')}
       />
     );
   }

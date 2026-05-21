@@ -16,16 +16,16 @@ type GenderPolicy = 'male' | 'female' | 'mixed';
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const PERKS = [
-  { icon: <Wifi size={18} />,      label: 'Fiber WiFi',      sub: '1 Gbps',         color: 'bg-blue-100 text-blue-600' },
-  { icon: <Wind size={18} />,      label: 'Air Con',         sub: 'ทุกห้อง',         color: 'bg-cyan-100 text-cyan-600' },
-  { icon: <Shield size={18} />,    label: 'Security 24 ชม.', sub: 'นิรภัย',          color: 'bg-green-100 text-green-600' },
-  { icon: <Camera size={18} />,    label: 'CCTV',            sub: 'ทุกพื้นที่',       color: 'bg-slate-100 text-slate-600' },
-  { icon: <Car size={18} />,       label: 'ที่จอดรถ',         sub: 'มอเตอร์ไซค์',     color: 'bg-orange-100 text-orange-600' },
-  { icon: <Waves size={18} />,     label: 'ซักอบรีด',         sub: 'ทุกชั้น',         color: 'bg-indigo-100 text-indigo-600' },
-  { icon: <Utensils size={18} />,  label: 'ครัวส่วนกลาง',    sub: 'ชั้น 1',          color: 'bg-rose-100 text-rose-600' },
-  { icon: <Dumbbell size={18} />,  label: 'ฟิตเนส',           sub: 'ชั้น 2',          color: 'bg-purple-100 text-purple-600' },
-  { icon: <Package size={18} />,   label: 'Locker',          sub: 'รับพัสดุ 24 ชม.', color: 'bg-amber-100 text-amber-600' },
-  { icon: <Users size={18} />,     label: 'Co-working',      sub: 'ห้องอ่านหนังสือ', color: 'bg-teal-100 text-teal-600' },
+  { icon: <Wifi size={18} />, label: 'Fiber WiFi', sub: '1 Gbps', color: 'bg-blue-100 text-blue-600' },
+  { icon: <Wind size={18} />, label: 'Air Con', sub: 'ทุกห้อง', color: 'bg-cyan-100 text-cyan-600' },
+  { icon: <Shield size={18} />, label: 'Security 24 ชม.', sub: 'นิรภัย', color: 'bg-green-100 text-green-600' },
+  { icon: <Camera size={18} />, label: 'CCTV', sub: 'ทุกพื้นที่', color: 'bg-slate-100 text-slate-600' },
+  { icon: <Car size={18} />, label: 'ที่จอดรถ', sub: 'มอเตอร์ไซค์', color: 'bg-orange-100 text-orange-600' },
+  { icon: <Waves size={18} />, label: 'ซักอบรีด', sub: 'ทุกชั้น', color: 'bg-indigo-100 text-indigo-600' },
+  { icon: <Utensils size={18} />, label: 'ครัวส่วนกลาง', sub: 'ชั้น 1', color: 'bg-rose-100 text-rose-600' },
+  { icon: <Dumbbell size={18} />, label: 'ฟิตเนส', sub: 'ชั้น 2', color: 'bg-purple-100 text-purple-600' },
+  { icon: <Package size={18} />, label: 'Locker', sub: 'รับพัสดุ 24 ชม.', color: 'bg-amber-100 text-amber-600' },
+  { icon: <Users size={18} />, label: 'Co-working', sub: 'ห้องอ่านหนังสือ', color: 'bg-teal-100 text-teal-600' },
 ];
 
 type RoomStatus = 'available' | 'reserved' | 'occupied';
@@ -42,22 +42,22 @@ interface Room {
 }
 
 const ROOMS: Room[] = [
-  { id: 'r1', number: 'A-201', floor: 2, type: 'Standard Single', size: '22 ตร.ม.', price: 3500, status: 'available',  direction: 'ทิศตะวันออก' },
-  { id: 'r2', number: 'A-205', floor: 2, type: 'Deluxe Single',   size: '26 ตร.ม.', price: 4000, status: 'available',  direction: 'ทิศเหนือ' },
-  { id: 'r3', number: 'A-301', floor: 3, type: 'Standard Single', size: '22 ตร.ม.', price: 3500, status: 'reserved',   direction: 'ทิศตะวันออก' },
-  { id: 'r4', number: 'A-401', floor: 4, type: 'Deluxe Single',   size: '26 ตร.ม.', price: 4000, status: 'available',  direction: 'ทิศใต้' },
-  { id: 'r5', number: 'A-402', floor: 4, type: 'Standard Twin',   size: '30 ตร.ม.', price: 4800, status: 'available',  direction: 'ทิศตะวันตก' },
-  { id: 'r6', number: 'A-501', floor: 5, type: 'Suite',           size: '36 ตร.ม.', price: 6500, status: 'occupied',   direction: 'วิวสระน้ำ' },
-  { id: 'r7', number: 'A-502', floor: 5, type: 'Suite',           size: '36 ตร.ม.', price: 6500, status: 'available',  direction: 'วิวสระน้ำ' },
-  { id: 'r8', number: 'A-601', floor: 6, type: 'Penthouse',       size: '48 ตร.ม.', price: 9000, status: 'available',  direction: 'วิว 360°' },
+  { id: 'r1', number: 'A-201', floor: 2, type: 'Standard Single', size: '22 ตร.ม.', price: 3500, status: 'available', direction: 'ทิศตะวันออก' },
+  { id: 'r2', number: 'A-205', floor: 2, type: 'Deluxe Single', size: '26 ตร.ม.', price: 4000, status: 'available', direction: 'ทิศเหนือ' },
+  { id: 'r3', number: 'A-301', floor: 3, type: 'Standard Single', size: '22 ตร.ม.', price: 3500, status: 'reserved', direction: 'ทิศตะวันออก' },
+  { id: 'r4', number: 'A-401', floor: 4, type: 'Deluxe Single', size: '26 ตร.ม.', price: 4000, status: 'available', direction: 'ทิศใต้' },
+  { id: 'r5', number: 'A-402', floor: 4, type: 'Standard Twin', size: '30 ตร.ม.', price: 4800, status: 'available', direction: 'ทิศตะวันตก' },
+  { id: 'r6', number: 'A-501', floor: 5, type: 'Suite', size: '36 ตร.ม.', price: 6500, status: 'occupied', direction: 'วิวสระน้ำ' },
+  { id: 'r7', number: 'A-502', floor: 5, type: 'Suite', size: '36 ตร.ม.', price: 6500, status: 'available', direction: 'วิวสระน้ำ' },
+  { id: 'r8', number: 'A-601', floor: 6, type: 'Penthouse', size: '48 ตร.ม.', price: 9000, status: 'available', direction: 'วิว 360°' },
 ];
 
 const FLOORS = [...new Set(ROOMS.map(r => r.floor))].sort();
 
 const STATUS_CONFIG: Record<RoomStatus, { label: string; color: string; dot: string }> = {
-  available: { label: 'ว่าง',      color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
-  reserved:  { label: 'จองแล้ว',   color: 'bg-amber-50 text-amber-700 border-amber-200',       dot: 'bg-amber-400' },
-  occupied:  { label: 'มีผู้เช่า', color: 'bg-red-50 text-red-600 border-red-200',             dot: 'bg-red-400' },
+  available: { label: 'ว่าง', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
+  reserved: { label: 'จองแล้ว', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
+  occupied: { label: 'มีผู้เช่า', color: 'bg-red-50 text-red-600 border-red-200', dot: 'bg-red-400' },
 };
 
 // Mock logged-in student gender — สมชาย = male
@@ -86,7 +86,7 @@ function GenderVerifyGate({
     setStep('verifying');
     setTimeout(() => {
       const matches =
-        (genderPolicy === 'male'   && STUDENT_GENDER === 'male') ||
+        (genderPolicy === 'male' && STUDENT_GENDER === 'male') ||
         (genderPolicy === 'female' && STUDENT_GENDER === 'female');
       setStep(matches ? 'pass' : 'fail');
       if (matches) setTimeout(onPass, 900);
@@ -94,10 +94,10 @@ function GenderVerifyGate({
   };
 
   const isMale = genderPolicy === 'male';
-  const accentBg   = isMale ? 'bg-blue-50 border-blue-200'   : 'bg-rose-50 border-rose-200';
-  const accentText = isMale ? 'text-blue-800'                 : 'text-rose-800';
-  const accentSub  = isMale ? 'text-blue-600'                 : 'text-rose-600';
-  const btnStyle   = isMale
+  const accentBg = isMale ? 'bg-blue-50 border-blue-200' : 'bg-rose-50 border-rose-200';
+  const accentText = isMale ? 'text-blue-800' : 'text-rose-800';
+  const accentSub = isMale ? 'text-blue-600' : 'text-rose-600';
+  const btnStyle = isMale
     ? { background: 'linear-gradient(135deg,#1d4ed8,#3b82f6)' }
     : { background: 'linear-gradient(135deg,#be123c,#e11d48)' };
 
@@ -124,7 +124,7 @@ function GenderVerifyGate({
           style={{ ...btnStyle, fontSize: 13, fontWeight: 800, boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}
         >
           <Fingerprint size={16} />
-          ยืนยันเพศจาก Thai ID
+          ยืนยันเพศจากบัตรประชาชน
         </button>
       )}
 
@@ -212,9 +212,9 @@ function RentRequestSheet({
         {/* Summary cards */}
         <div className="grid grid-cols-2 gap-2">
           {[
-            { label: 'ค่าเช่า/เดือน',   value: `฿${room.price.toLocaleString()}` },
-            { label: 'เงินประกัน',       value: `฿${deposit.toLocaleString()}` },
-            { label: 'สัญญาขั้นต่ำ',     value: '6 เดือน' },
+            { label: 'ค่าเช่า/เดือน', value: `฿${room.price.toLocaleString()}` },
+            { label: 'เงินประกัน', value: `฿${deposit.toLocaleString()}` },
+            { label: 'สัญญาขั้นต่ำ', value: '6 เดือน' },
             { label: 'แจ้งออกล่วงหน้า', value: '30 วัน' },
           ].map(item => (
             <div key={item.label} className="bg-gray-50 rounded-2xl px-3 py-2.5 border border-gray-100">
@@ -299,8 +299,8 @@ function RentSuccessOverlay({ room, onClose }: { room: Room; onClose: () => void
         </div>
         <div className="w-full bg-gray-50 rounded-2xl px-4 py-3 space-y-2">
           {[
-            { label: 'ห้อง',        value: `${room.number} · ${room.type}` },
-            { label: 'ค่าเช่า',     value: `฿${room.price.toLocaleString()}/เดือน` },
+            { label: 'ห้อง', value: `${room.number} · ${room.type}` },
+            { label: 'ค่าเช่า', value: `฿${room.price.toLocaleString()}/เดือน` },
             { label: 'หมายเลขคำขอ', value: 'REQ-2569-0847' },
           ].map(r => (
             <div key={r.label} className="flex justify-between">
@@ -353,9 +353,9 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
 
   useEffect(() => {
     const policy = localStorage.getItem('selected_dorm_gender') as GenderPolicy | null;
-    const name   = localStorage.getItem('selected_dorm_name');
+    const name = localStorage.getItem('selected_dorm_name');
     if (policy) setGenderPolicy(policy);
-    if (name)   setDormName(name);
+    if (name) setDormName(name);
   }, []);
 
   // Disable back navigation until contract is signed
@@ -389,11 +389,10 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
           <button
             onClick={isContractSigned ? () => onNavigate('01') : undefined}
             disabled={!isContractSigned}
-            className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${
-              isContractSigned
+            className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${isContractSigned
                 ? 'bg-white/15 border-white/20 active:bg-white/25'
                 : 'bg-white/5 border-white/10 opacity-30 cursor-not-allowed'
-            }`}
+              }`}
           >
             <ArrowLeft size={16} className="text-white" />
           </button>
@@ -413,7 +412,7 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
             <div className="bg-white/10 border border-white/20 rounded-2xl px-3 py-2 text-center shrink-0">
               <p className="text-yellow-400" style={{ fontSize: '16px', fontWeight: 800 }}>4.8</p>
               <div className="flex gap-0.5 justify-center">
-                {[1,2,3,4,5].map(i => <Star key={i} size={8} className={i <= 4 ? 'text-yellow-400 fill-yellow-400' : 'text-yellow-400/40'} />)}
+                {[1, 2, 3, 4, 5].map(i => <Star key={i} size={8} className={i <= 4 ? 'text-yellow-400 fill-yellow-400' : 'text-yellow-400/40'} />)}
               </div>
               <p className="text-white/60" style={{ fontSize: '9px' }}>142 รีวิว</p>
             </div>
@@ -484,7 +483,7 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
               ห้องว่าง
             </p>
             <div className="flex items-center gap-2">
-              {(['available','reserved','occupied'] as RoomStatus[]).map(s => (
+              {(['available', 'reserved', 'occupied'] as RoomStatus[]).map(s => (
                 <div key={s} className="flex items-center gap-1">
                   <div className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[s].dot}`} />
                   <p className="text-gray-400" style={{ fontSize: '9px' }}>{STATUS_CONFIG[s].label}</p>
@@ -549,12 +548,12 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
           </p>
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
             {[
-              { label: 'ค่าเช่า (Standard Single)',  value: '฿3,500', sub: 'ต่อเดือน', accent: false },
-              { label: 'ค่าเช่า (Deluxe Single)',    value: '฿4,000', sub: 'ต่อเดือน', accent: false },
-              { label: 'ค่าเช่า (Suite)',             value: '฿6,500', sub: 'ต่อเดือน', accent: false },
-              { label: 'ค่าไฟฟ้า',                    value: '฿5',     sub: 'ต่อหน่วย', accent: false },
-              { label: 'ค่าน้ำ',                      value: '฿10',    sub: 'ต่อหน่วย', accent: false },
-              { label: 'Internet (รวมในค่าเช่า)',     value: 'ฟรี',    sub: '',          accent: true },
+              { label: 'ค่าเช่า (Standard Single)', value: '฿3,500', sub: 'ต่อเดือน', accent: false },
+              { label: 'ค่าเช่า (Deluxe Single)', value: '฿4,000', sub: 'ต่อเดือน', accent: false },
+              { label: 'ค่าเช่า (Suite)', value: '฿6,500', sub: 'ต่อเดือน', accent: false },
+              { label: 'ค่าไฟฟ้า', value: '฿5', sub: 'ต่อหน่วย', accent: false },
+              { label: 'ค่าน้ำ', value: '฿10', sub: 'ต่อหน่วย', accent: false },
+              { label: 'Internet (รวมในค่าเช่า)', value: 'ฟรี', sub: '', accent: true },
             ].map((row, i, arr) => (
               <div key={row.label}>
                 <div className="flex items-center justify-between px-4 py-3">
@@ -583,10 +582,10 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
           </button>
           <div className="mt-3 space-y-2">
             {[
-              { icon: <Clock size={15} />,       color: 'bg-indigo-100 text-indigo-600',  label: 'ระยะสัญญาขั้นต่ำ',      value: '6 เดือน', desc: 'ต้องอยู่อย่างน้อย 6 เดือนก่อนออก' },
-              { icon: <AlertCircle size={15} />, color: 'bg-amber-100 text-amber-600',    label: 'แจ้งออกล่วงหน้า',       value: '30 วัน',  desc: 'แจ้งก่อนวันครบสัญญาอย่างน้อย 30 วัน' },
-              { icon: <Banknote size={15} />,    color: 'bg-emerald-100 text-emerald-600', label: 'เงินมัดจำ/ประกัน',      value: '2 เดือน', desc: 'เท่ากับค่าเช่า 2 เดือน คืนเมื่อออก (หลังหักค่าเสียหาย)' },
-              { icon: <FileText size={15} />,    color: 'bg-rose-100 text-rose-600',      label: 'ค่าปรับออกก่อนกำหนด',   value: '1 เดือน', desc: 'หากออกก่อนครบ 6 เดือน ปรับเท่ากับค่าเช่า 1 เดือน' },
+              { icon: <Clock size={15} />, color: 'bg-indigo-100 text-indigo-600', label: 'ระยะสัญญาขั้นต่ำ', value: '6 เดือน', desc: 'ต้องอยู่อย่างน้อย 6 เดือนก่อนออก' },
+              { icon: <AlertCircle size={15} />, color: 'bg-amber-100 text-amber-600', label: 'แจ้งออกล่วงหน้า', value: '30 วัน', desc: 'แจ้งก่อนวันครบสัญญาอย่างน้อย 30 วัน' },
+              { icon: <Banknote size={15} />, color: 'bg-emerald-100 text-emerald-600', label: 'เงินมัดจำ/ประกัน', value: '2 เดือน', desc: 'เท่ากับค่าเช่า 2 เดือน คืนเมื่อออก (หลังหักค่าเสียหาย)' },
+              { icon: <FileText size={15} />, color: 'bg-rose-100 text-rose-600', label: 'ค่าปรับออกก่อนกำหนด', value: '1 เดือน', desc: 'หากออกก่อนครบ 6 เดือน ปรับเท่ากับค่าเช่า 1 เดือน' },
             ].map((term, i) => (
               <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="flex items-center gap-3 px-4 py-3">
@@ -614,7 +613,7 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
           <div className="rounded-3xl overflow-hidden shadow-md" style={{ background: heroGradient }}>
             <div className="px-5 py-4 space-y-3">
               {[
-                { label: 'ค่าเช่าเดือนแรก',      value: 'ตามห้องที่เลือก' },
+                { label: 'ค่าเช่าเดือนแรก', value: 'ตามห้องที่เลือก' },
                 { label: 'เงินประกัน (2 เดือน)', value: 'ตามห้องที่เลือก' },
               ].map(r => (
                 <div key={r.label} className="flex justify-between">
@@ -643,9 +642,8 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
         <button
           onClick={isContractSigned ? () => onNavigate('01') : undefined}
           disabled={!isContractSigned}
-          className={`w-10 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-            isContractSigned ? 'bg-gray-100 active:bg-gray-200' : 'bg-gray-50 opacity-30 cursor-not-allowed'
-          }`}
+          className={`w-10 h-12 rounded-2xl flex items-center justify-center shrink-0 ${isContractSigned ? 'bg-gray-100 active:bg-gray-200' : 'bg-gray-50 opacity-30 cursor-not-allowed'
+            }`}
         >
           <ArrowLeft size={18} className="text-gray-600" />
         </button>
