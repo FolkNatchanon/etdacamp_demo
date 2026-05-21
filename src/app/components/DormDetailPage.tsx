@@ -120,7 +120,7 @@ function GenderVerifyGate({
       {step === 'idle' && (
         <button
           onClick={handleVerify}
-          className="w-full py-3 rounded-2xl text-white flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+          className="w-full py-3 rounded-2xl text-white flex items-center justify-center gap-2 active:scale-[0.98] transition-all animate-pulse-glow"
           style={{ ...btnStyle, fontSize: 13, fontWeight: 800, boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}
         >
           <Fingerprint size={16} />
@@ -264,7 +264,7 @@ function RentRequestSheet({
 
         <button
           onClick={canSubmit ? onSubmit : undefined}
-          className={`w-full py-4 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${canSubmit ? 'text-white' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+          className={`w-full py-4 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${canSubmit ? 'text-white animate-pulse-glow' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
           style={canSubmit ? {
             background: 'linear-gradient(135deg,#1e40af,#4f46e5)',
             fontSize: '15px', fontWeight: 800,
@@ -635,7 +635,7 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
             const first = ROOMS.find(r => r.status === 'available');
             if (first) setSelectedRoom(first);
           }}
-          className="flex-1 h-12 rounded-2xl text-white flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+          className="flex-1 h-12 rounded-2xl text-white flex items-center justify-center gap-2 active:scale-[0.98] transition-all animate-pulse-glow"
           style={{
             background: genderPolicy === 'female'
               ? 'linear-gradient(135deg,#be123c,#e11d48)'
@@ -667,7 +667,7 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
       {showSuccess && confirmedRoom && (
         <RentSuccessOverlay
           room={confirmedRoom}
-          onClose={() => { setShowSuccess(false); onNavigate('01'); }}
+          onClose={() => { setShowSuccess(false); onNavigate('03'); }}
         />
       )}
     </div>

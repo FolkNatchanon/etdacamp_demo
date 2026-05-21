@@ -57,13 +57,12 @@ export default function NavigableFrame12({ onNavigate }: NavigableFrame12Props) 
       setSigningStatus('success');
       // Save signature state to localStorage
       localStorage.setItem('trustwallet_contract_signed', 'true');
-      
-      // Auto redirect to My Dorm tab inside student wallet shell after success
-      setTimeout(() => {
-        setSigningStatus('signed');
-        onNavigate('01', 'dorm');
-      }, 1500);
     }, 2000);
+  };
+
+  const handleFinishSigning = () => {
+    setSigningStatus('signed');
+    onNavigate('01', 'dorm');
   };
 
   const contractVP = {
@@ -274,7 +273,7 @@ export default function NavigableFrame12({ onNavigate }: NavigableFrame12Props) 
             disabled={signingStatus !== 'unsigned'}
             className={`flex-1 py-3.5 rounded-2xl text-white flex items-center justify-center gap-2 font-bold text-sm shadow-lg transition-all ${
               signingStatus === 'unsigned'
-                ? 'bg-gradient-to-r from-slate-900 to-indigo-950 active:scale-[0.98] shadow-slate-900/10'
+                ? 'bg-gradient-to-r from-slate-900 to-indigo-950 active:scale-[0.98] shadow-slate-900/10 animate-pulse-glow'
                 : 'bg-emerald-600/90 text-emerald-100 cursor-default'
             }`}
           >
@@ -315,20 +314,47 @@ export default function NavigableFrame12({ onNavigate }: NavigableFrame12Props) 
 
       {/* iOS Face ID signature success state */}
       {signingStatus === 'success' && (
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-[1000] flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-[260px] w-full text-center flex flex-col items-center gap-4 shadow-2xl animate-scale-in">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/10 animate-bounce">
-              <CheckCircle2 size={32} className="text-emerald-400" />
+        <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md z-[1000] flex items-center justify-center p-5">
+          <div className="bg-white border border-slate-200 rounded-[32px] p-6 max-w-sm w-full text-center flex flex-col items-center gap-5 shadow-2xl animate-scale-in text-slate-800">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/10 animate-bounce">
+              <CheckCircle2 size={34} className="text-emerald-600" />
             </div>
-            <div>
-              <h4 className="font-extrabold text-sm text-emerald-400">ลงลายมือชื่อสำเร็จ!</h4>
-              <p className="text-[10px] text-slate-300 mt-1">
-                สร้างลายเซ็นดิจิทัลและบันทึกลงในสัญญาสมบูรณ์
+            
+            <div className="space-y-1">
+              <h4 className="font-black text-lg text-slate-900">สัญญาเช่าเสร็จสมบูรณ์!</h4>
+              <p className="text-xs text-slate-500 leading-normal px-2">
+                เอกสารสัญญาเช่าดิจิทัล (e-Contract) ได้รับการลงลายมือชื่อดิจิทัลที่เชื่อถือได้ตามข้อเสนอแนะมาตรฐาน ETDA เรียบร้อยแล้ว
               </p>
             </div>
-            <span className="text-[9px] text-emerald-500 font-mono">
-              SHA-255: {contractHash.slice(0, 16)}...
-            </span>
+
+            {/* Contract Summary Box */}
+            <div className="w-full bg-slate-50 border border-slate-150 rounded-2xl p-3.5 text-left space-y-1.5 text-[11px]">
+              <div className="flex justify-between">
+                <span className="text-slate-400">หอพัก:</span>
+                <span className="font-bold text-slate-700">{contractData.dormName} (ห้อง {contractData.room})</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">ผู้ลงนามร่วม:</span>
+                <span className="font-semibold text-slate-700">{contractData.landlordName} (เจ้าของหอ)</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">เอกสารแฮช:</span>
+                <span className="font-mono text-[9px] text-indigo-600">{contractHash.slice(0, 8)}...{contractHash.slice(-8)}</span>
+              </div>
+              <div className="h-px bg-slate-200/80 my-1" />
+              <div className="flex items-center gap-1.5 text-emerald-600 font-bold justify-center pt-0.5">
+                <ShieldCheck size={13} />
+                <span>สถานะ: เข้ารหัสแบบสองฝ่าย (Dual-Signed)</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleFinishSigning}
+              className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 active:scale-[0.98] text-white rounded-2xl font-bold text-xs tracking-wide shadow-lg shadow-indigo-600/20 transition-all animate-pulse-glow flex items-center justify-center gap-2"
+            >
+              <Sparkles size={14} />
+              ตรวจสอบสัญญาดิจิทัลใน Wallet
+            </button>
           </div>
         </div>
       )}

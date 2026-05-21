@@ -182,13 +182,14 @@ function VerificationBadge({ status }: { status: PendingTenant['verificationStat
 
 type VCStep = 'idle' | 'selecting' | 'qr' | 'done' | 'approved';
 
-function PendingTenantCard({ tenant, onVerify, onView, onViewVC, onPaymentComplete, hasRequiredCredentials }: {
+function PendingTenantCard({ tenant, onVerify, onView, onViewVC, onPaymentComplete, hasRequiredCredentials, onApprove }: {
   tenant: PendingTenant;
   onVerify: () => void;
   onView: () => void;
   onViewVC: () => void;
   onPaymentComplete: () => void;
   hasRequiredCredentials: boolean;
+  onApprove: () => void;
 }) {
   const initStep: VCStep =
     tenant.verificationStatus === 'verified'  ? 'done' :
@@ -226,7 +227,9 @@ function PendingTenantCard({ tenant, onVerify, onView, onViewVC, onPaymentComple
     vcStep === 'done' ? 'verified' : vcStep === 'qr' ? 'requested' : 'unverified';
 
   return (
-    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className={`bg-white rounded-3xl border shadow-sm overflow-hidden transition-all duration-300 ${
+      tenant.id === 'p1' ? 'animate-pulse-glow border-indigo-500/50' : 'border-gray-100'
+    }`}>
       <div className="h-1.5 w-full" style={{ background: 'linear-gradient(90deg,#4f46e5,#0ea5e9,#10b981)' }} />
 
       <div className="px-4 pt-4 pb-4 space-y-3">
@@ -271,7 +274,7 @@ function PendingTenantCard({ tenant, onVerify, onView, onViewVC, onPaymentComple
           <>
             <button
               onClick={() => setVcStep('selecting')}
-              className="w-full py-3 rounded-2xl text-white flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-lg"
+              className={`w-full py-3 rounded-2xl text-white flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-lg ${tenant.id === 'p1' ? 'animate-pulse-glow' : ''}`}
               style={{ background: 'linear-gradient(135deg,#1e40af,#4f46e5)', fontSize: 13, fontWeight: 800, boxShadow: '0 6px 20px rgba(79,70,229,0.35)' }}
             >
               <FileSearch size={15} />
@@ -337,7 +340,7 @@ function PendingTenantCard({ tenant, onVerify, onView, onViewVC, onPaymentComple
               </button>
               <button
                 onClick={() => setVcStep('qr')}
-                className="flex-1 py-2.5 rounded-2xl text-white flex items-center justify-center gap-2 active:scale-[0.98]"
+                className={`flex-1 py-2.5 rounded-2xl text-white flex items-center justify-center gap-2 active:scale-[0.98] ${tenant.id === 'p1' ? 'animate-pulse-glow' : ''}`}
                 style={{ background: 'linear-gradient(135deg,#1e40af,#4f46e5)', fontSize: 13, fontWeight: 800, boxShadow: '0 4px 14px rgba(79,70,229,0.3)' }}
               >
                 <ScanLine size={15} />
@@ -392,7 +395,7 @@ function PendingTenantCard({ tenant, onVerify, onView, onViewVC, onPaymentComple
             <div className="flex gap-2">
               <button
                 onClick={() => setVcStep('done')}
-                className="flex-1 py-2.5 rounded-2xl text-white flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                className={`flex-1 py-2.5 rounded-2xl text-white flex items-center justify-center gap-1.5 active:scale-[0.98] ${tenant.id === 'p1' ? 'animate-pulse-glow' : ''}`}
                 style={{ background: 'linear-gradient(135deg,#059669,#10b981)', fontSize: 12, fontWeight: 700 }}
               >
                 <CheckCircle2 size={14} />
@@ -480,7 +483,7 @@ function PendingTenantCard({ tenant, onVerify, onView, onViewVC, onPaymentComple
             {/* View disclosed data button */}
             <button
               onClick={onViewVC}
-              className="w-full py-2.5 rounded-2xl border-2 border-indigo-200 bg-indigo-50 text-indigo-700 flex items-center justify-center gap-2 active:bg-indigo-100 active:scale-[0.98] transition-all"
+              className={`w-full py-2.5 rounded-2xl border-2 border-indigo-200 bg-indigo-50 text-indigo-700 flex items-center justify-center gap-2 active:bg-indigo-100 active:scale-[0.98] transition-all ${tenant.id === 'p1' ? 'animate-pulse-glow' : ''}`}
               style={{ fontSize: 12, fontWeight: 700 }}
             >
               <Eye size={14} />
@@ -504,11 +507,15 @@ function PendingTenantCard({ tenant, onVerify, onView, onViewVC, onPaymentComple
 
             <div className="flex gap-2">
               <button
-                onClick={() => hasRequiredCredentials && setVcStep('approved')}
+                onClick={() => {
+                  if (hasRequiredCredentials) {
+                    onApprove();
+                  }
+                }}
                 disabled={!hasRequiredCredentials}
                 className={`flex-1 flex items-center justify-center gap-1.5 rounded-2xl py-2.5 ${
                   hasRequiredCredentials
-                    ? 'bg-emerald-600 text-white active:bg-emerald-700 shadow-md shadow-emerald-200'
+                    ? `bg-emerald-600 text-white active:bg-emerald-700 shadow-md shadow-emerald-200 ${tenant.id === 'p1' ? 'animate-pulse-glow' : ''}`
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
                 style={{ fontSize: 12, fontWeight: 700 }}
@@ -878,6 +885,27 @@ export default function LandlordDashboard({ onNavigate }: LandlordDashboardProps
   const [copiedDid, setCopiedDid] = useState(false);
   const landlordDid = 'did:web:abcmansion.trust.in.th';
 
+  // State for Landlord Biometric Signing
+  const [showBioSign, setShowBioSign] = useState(false);
+  const [showApproveSuccess, setShowApproveSuccess] = useState(false);
+  const [bioSignStatus, setBioSignStatus] = useState<'idle' | 'scanning' | 'success'>('idle');
+
+  const triggerLandlordBioSign = (tenant: PendingTenant) => {
+    setShowBioSign(true);
+    setBioSignStatus('idle');
+  };
+
+  const handleStartBioScan = () => {
+    setBioSignStatus('scanning');
+    setTimeout(() => {
+      setBioSignStatus('success');
+      setTimeout(() => {
+        setShowBioSign(false);
+        setShowApproveSuccess(true);
+      }, 800);
+    }, 1500);
+  };
+
   const handleCopyDid = () => {
     navigator.clipboard.writeText(landlordDid);
     setCopiedDid(true);
@@ -1121,6 +1149,13 @@ export default function LandlordDashboard({ onNavigate }: LandlordDashboardProps
                   onViewVC={() => setVcSheetTenant(t)}
                   onPaymentComplete={() => handlePaymentComplete(t.id)}
                   hasRequiredCredentials={hasRequiredCredentials}
+                  onApprove={() => {
+                    if (t.id === 'p1') {
+                      triggerLandlordBioSign(t);
+                    } else {
+                      handlePaymentComplete(t.id);
+                    }
+                  }}
                 />
               ))
             )}
@@ -1169,6 +1204,124 @@ export default function LandlordDashboard({ onNavigate }: LandlordDashboardProps
       {/* VC Data Sheet overlay */}
       {vcSheetTenant && (
         <VCDataSheet tenant={vcSheetTenant} onClose={() => setVcSheetTenant(null)} />
+      )}
+
+      {/* ── Landlord Biometric Signature Overlay ── */}
+      {showBioSign && (
+        <div className="absolute inset-0 z-[60] flex flex-col justify-end animate-fade-in"
+          style={{ background: 'rgba(15,23,42,0.85)' }}
+          onClick={() => setShowBioSign(false)}
+        >
+          <div className="bg-white rounded-t-3xl p-6 w-full shadow-2xl flex flex-col items-center gap-5 text-center animate-scale-in"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-1" />
+            <div className="flex items-center justify-between w-full pb-2 border-b border-gray-100">
+              <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 rounded px-2 py-0.5 text-[10px] font-bold">
+                Landlord Auth
+              </span>
+              <p className="text-gray-900 font-extrabold text-sm">ลงลายมือชื่อดิจิทัลผู้ให้เช่า</p>
+              <button onClick={() => setShowBioSign(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={16} />
+              </button>
+            </div>
+
+            <p className="text-gray-600 text-xs leading-relaxed px-2">
+              สแกนลายนิ้วมือหรือใบหน้าผ่านอุปกรณ์พกพา เพื่อลงชื่อรับรองสัญญาเช่าห้องพัก <strong>A-502</strong> (สมชาย ใจดี)
+            </p>
+
+            <div className="my-3 flex flex-col items-center justify-center">
+              {bioSignStatus === 'idle' && (
+                <button
+                  onClick={handleStartBioScan}
+                  className="w-20 h-20 rounded-full bg-indigo-50 hover:bg-indigo-100 border-4 border-indigo-200 flex items-center justify-center active:scale-95 transition-all animate-pulse-glow"
+                >
+                  <Fingerprint size={38} className="text-indigo-600" />
+                </button>
+              )}
+              {bioSignStatus === 'scanning' && (
+                <div className="w-20 h-20 rounded-full bg-indigo-50 border-4 border-indigo-500/30 flex items-center justify-center relative overflow-hidden">
+                  <Fingerprint size={38} className="text-indigo-600 animate-pulse" />
+                  <div className="absolute inset-x-0 h-0.5 bg-indigo-500 animate-scan top-0" />
+                </div>
+              )}
+              {bioSignStatus === 'success' && (
+                <div className="w-20 h-20 rounded-full bg-emerald-100 border-4 border-emerald-200 flex items-center justify-center animate-scale-in">
+                  <CheckCircle2 size={38} className="text-emerald-500" />
+                </div>
+              )}
+              
+              <p className="text-xs font-bold mt-4 text-slate-700">
+                {bioSignStatus === 'idle' && '👉 แตะเพื่อยืนยันลายนิ้วมือ (Biometric Sign)'}
+                {bioSignStatus === 'scanning' && 'กำลังอ่านข้อมูลไบโอเมตริกซ์…'}
+                {bioSignStatus === 'success' && 'ยืนยันสำเร็จ ✓'}
+              </p>
+            </div>
+
+            <div className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl p-3 text-left space-y-1">
+              <div className="flex justify-between text-[10px]">
+                <span className="text-slate-400">DID ผู้ประกอบการ:</span>
+                <span className="text-indigo-600 font-mono">did:web:abcmansion.trust.in.th</span>
+              </div>
+              <div className="flex justify-between text-[10px]">
+                <span className="text-slate-400">ระบบคีย์ลงนาม:</span>
+                <span className="text-slate-700 font-mono">Secp256r1 (WebAuthn)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Landlord Approval & Signature Success Overlay ── */}
+      {showApproveSuccess && (
+        <div className="absolute inset-0 z-[60] flex flex-col justify-end animate-fade-in"
+          style={{ background: 'rgba(15,23,42,0.85)' }}
+          onClick={() => setShowApproveSuccess(false)}
+        >
+          <div className="bg-white rounded-t-3xl p-6 w-full shadow-2xl flex flex-col items-center gap-4 text-center animate-scale-in"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-1" />
+            <div className="w-14 h-14 rounded-full bg-emerald-100 border-4 border-emerald-200 flex items-center justify-center">
+              <ShieldCheck size={28} className="text-emerald-500 animate-pulse" />
+            </div>
+
+            <div>
+              <p className="text-gray-900 text-lg font-black leading-snug">ลงนามสำเร็จ! (Sign 1/2 Complete)</p>
+              <p className="text-gray-500 mt-2 text-xs leading-relaxed px-2">
+                ผู้ให้เช่าได้เซ็นสัญญาเช่า e-Contract ดิจิทัลเรียบร้อยแล้ว ขั้นตอนสุดท้าย: สลับบทบาทเป็นผู้เช่าเพื่อลงนามร่วมกันแบบสมบูรณ์
+              </p>
+            </div>
+
+            <div className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl p-3 text-left space-y-1">
+              <div className="flex justify-between text-[10px]">
+                <span className="text-slate-400">สถานะสัญญาเช่า:</span>
+                <span className="text-amber-600 font-bold">รอผู้เช่าลงนาม (Pending Tenant Sign)</span>
+              </div>
+              <div className="flex justify-between text-[10px]">
+                <span className="text-slate-400">ระดับความปลอดภัย:</span>
+                <span className="text-emerald-600 font-bold">ลายมือชื่ออิเล็กทรอนิกส์ ม.26</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowApproveSuccess(false);
+                onNavigate('09'); // Warp to tenant dual sign screen (screen 09 / NavigableFrame12)
+              }}
+              className="w-full py-3.5 rounded-2xl text-white flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all animate-pulse-glow"
+              style={{
+                background: 'linear-gradient(135deg,#4f46e5,#7c3aed)',
+                fontSize: '13px',
+                fontWeight: 800,
+                boxShadow: '0 6px 20px rgba(99,102,241,0.3)',
+              }}
+            >
+              สลับบทบาทเป็นผู้เช่าเพื่อลงนามร่วมกัน
+              <ArrowRight size={14} />
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -92,16 +92,15 @@ export default function App() {
 
   const isPortal = currentScreen === '00';
   
-  // Mobile wallets flow (Student Wallet + Landlord Wallet flows)
+  // Mobile wallets flow (Student Wallet + Landlord Wallet flows + Landlord Console)
   const isMobileWallet = [
     '01', '02', '03', '04', '05', '08', '09', 'dorm-detail', // Student Wallet flow
-    '06', 'landlord-wallet' // Landlord Wallet flow
+    '06', 'landlord-wallet', // Landlord Wallet flow
+    'landlord', '07' // Landlord console dashboard & tenant detail screens
   ].includes(currentScreen);
 
-  // Desktop consoles flow (Landlord Console main pages)
-  const isDesktopConsole = [
-    'landlord', '07'
-  ].includes(currentScreen);
+  // Desktop consoles flow (no longer full-screen desktop to optimize for judges on mobile)
+  const isDesktopConsole = false;
 
   // 1. Portal Page - Full-screen responsive PortalLanding
   const renderLayout = () => {

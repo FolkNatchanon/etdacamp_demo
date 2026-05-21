@@ -63,7 +63,7 @@ export default function PortalLanding({ onNavigate }: PortalLandingProps) {
             onClick={() => onNavigate('01')}
             onMouseEnter={() => setHoveredCard('tenant')}
             onMouseLeave={() => setHoveredCard(null)}
-            className="group relative cursor-pointer rounded-3xl p-8 bg-gradient-to-b from-slate-800/40 to-slate-900/60 border border-slate-700/40 backdrop-blur-xl shadow-2xl transition-all duration-300 hover:border-indigo-500/50 hover:shadow-indigo-500/10 hover:-translate-y-1 overflow-hidden"
+            className="group relative cursor-pointer rounded-3xl p-8 bg-gradient-to-b from-slate-800/40 to-slate-900/60 border border-slate-700/40 backdrop-blur-xl shadow-2xl transition-all duration-300 hover:border-indigo-500/50 hover:shadow-indigo-500/10 hover:-translate-y-1 overflow-hidden animate-pulse-glow"
           >
             {/* Card Accent Gradient Blob */}
             <div className="absolute -right-20 -top-20 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl group-hover:bg-indigo-500/20 transition-all duration-500 pointer-events-none" />

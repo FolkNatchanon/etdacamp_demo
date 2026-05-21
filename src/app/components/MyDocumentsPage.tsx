@@ -1478,6 +1478,19 @@ function PinSetupScreen({ onDone }: { onDone: () => void }) {
   const current = phase === 'confirm' ? confirmPin : pin;
   const setter  = phase === 'confirm' ? setConfirmPin : setPin;
 
+  const handleAutoFill = () => {
+    if (phase === 'create') {
+      setPin('123456');
+      setPhase('confirm');
+    } else if (phase === 'confirm') {
+      setConfirmPin('123456');
+      localStorage.setItem('trustwallet_pin', '123456');
+      localStorage.setItem('trustwallet_registered', '1');
+      setPhase('success');
+      setTimeout(onDone, 1400);
+    }
+  };
+
   const handleKey = (key: string) => {
     if (phase === 'success') return;
     if (key === '⌫') {
@@ -1493,18 +1506,12 @@ function PinSetupScreen({ onDone }: { onDone: () => void }) {
         // Short delay so user sees 6th dot fill before advancing
         setTimeout(() => setPhase('confirm'), 300);
       } else {
-        // Confirm phase — compare
+        // Confirm phase — accept any 6-digit PIN
         setTimeout(() => {
-          if (next === pin) {
-            localStorage.setItem('trustwallet_pin', pin);
-            localStorage.setItem('trustwallet_registered', '1');
-            setPhase('success');
-            setTimeout(onDone, 1400);
-          } else {
-            setShake(true);
-            setConfirmPin('');
-            setTimeout(() => setShake(false), 500);
-          }
+          localStorage.setItem('trustwallet_pin', next);
+          localStorage.setItem('trustwallet_registered', '1');
+          setPhase('success');
+          setTimeout(onDone, 1400);
         }, 300);
       }
     }
@@ -1553,7 +1560,7 @@ function PinSetupScreen({ onDone }: { onDone: () => void }) {
                   key={i}
                   className={`w-4 h-4 rounded-full border-2 transition-all duration-150 ${
                     filled
-                      ? phase === 'confirm' ? 'bg-indigo-500 border-indigo-500 scale-110' : 'bg-white border-white scale-110'
+                      ? 'bg-indigo-600 border-indigo-600 scale-110'
                       : 'bg-transparent border-gray-300'
                   }`}
                 />
@@ -1589,9 +1596,20 @@ function PinSetupScreen({ onDone }: { onDone: () => void }) {
           </div>
         )}
 
+        {/* Auto-fill Button */}
+        {phase !== 'success' && (
+          <button
+            type="button"
+            onClick={handleAutoFill}
+            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white rounded-xl font-bold transition-all text-xs mb-2 animate-pulse-glow"
+          >
+            ⚡ ตั้งรหัสผ่านอัตโนมัติ (123456)
+          </button>
+        )}
+
         {/* Numpad */}
         {phase !== 'success' && (
-          <div className="grid grid-cols-3 gap-3 w-full mt-8">
+          <div className="grid grid-cols-3 gap-3 w-full mt-2">
             {NUMPAD.map((key, idx) => {
               if (key === '') return <div key={idx} />;
               const isDelete = key === '⌫';
@@ -1634,6 +1652,13 @@ function PinEntryScreen({ onSuccess, onBack }: { onSuccess: () => void; onBack: 
   const [shake, setShake] = useState(false);
   const [attempts, setAttempts] = useState(0);
 
+  const handleAutoFill = () => {
+    setPin('123456');
+    setTimeout(() => {
+      onSuccess();
+    }, 200);
+  };
+
   const handleKey = (key: string) => {
     if (key === '⌫') { setPin(p => p.slice(0, -1)); return; }
     if (pin.length >= 6) return;
@@ -1642,16 +1667,8 @@ function PinEntryScreen({ onSuccess, onBack }: { onSuccess: () => void; onBack: 
 
     if (next.length === 6) {
       setTimeout(() => {
-        const stored = localStorage.getItem('trustwallet_pin');
-        if (next === stored) {
-          onSuccess();
-        } else {
-          const newAttempts = attempts + 1;
-          setAttempts(newAttempts);
-          setShake(true);
-          setPin('');
-          setTimeout(() => setShake(false), 500);
-        }
+        // Accept ANY 6 digit PIN directly, no need to match stored!
+        onSuccess();
       }, 200);
     }
   };
@@ -1684,8 +1701,8 @@ function PinEntryScreen({ onSuccess, onBack }: { onSuccess: () => void; onBack: 
                 key={i}
                 className={`w-4 h-4 rounded-full border-2 transition-all duration-150 ${
                   i < pin.length
-                    ? 'bg-white border-white scale-110'
-                    : 'bg-transparent border-white/40'
+                    ? 'bg-indigo-600 border-indigo-600 scale-110'
+                    : 'bg-transparent border-indigo-200'
                 }`}
               />
             ))}
@@ -1701,8 +1718,17 @@ function PinEntryScreen({ onSuccess, onBack }: { onSuccess: () => void; onBack: 
           </div>
         )}
 
+        {/* Auto-fill Button */}
+        <button
+          type="button"
+          onClick={handleAutoFill}
+          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white rounded-xl font-bold transition-all text-xs mt-2 animate-pulse-glow"
+        >
+          ⚡ เข้าสู่ระบบอัตโนมัติ (123456)
+        </button>
+
         {/* Numpad */}
-        <div className="grid grid-cols-3 gap-3 w-full mt-4">
+        <div className="grid grid-cols-3 gap-3 w-full mt-2">
           {NUMPAD.map((key, idx) => {
             if (key === '') return <div key={idx} />;
             const isDelete = key === '⌫';

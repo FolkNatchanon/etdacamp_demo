@@ -227,6 +227,17 @@ function PinSetupScreen({ onSuccess }: { onSuccess: () => void }) {
     }
   }, [phase, onSuccess]);
 
+  const handleAutoFill = () => {
+    if (phase === 'create') {
+      setPin('123456');
+      setPhase('confirm');
+    } else if (phase === 'confirm') {
+      setConfirmPin('123456');
+      localStorage.setItem('landlord_thai_id_pin', '123456');
+      setPhase('success');
+    }
+  };
+
   const handleKey = (key: string) => {
     if (phase === 'success') return;
 
@@ -252,14 +263,9 @@ function PinSetupScreen({ onSuccess }: { onSuccess: () => void }) {
       setConfirmPin(newValue);
       if (newValue.length === 6) {
         setTimeout(() => {
-          if (newValue === pin) {
-            localStorage.setItem('landlord_thai_id_pin', newValue);
-            setPhase('success');
-          } else {
-            setShake(true);
-            setConfirmPin('');
-            setTimeout(() => setShake(false), 500);
-          }
+          // Accept any 6 digit PIN
+          localStorage.setItem('landlord_thai_id_pin', newValue);
+          setPhase('success');
         }, 200);
       }
     }
@@ -364,6 +370,13 @@ function PinEntryScreen({ onSuccess, onBack }: { onSuccess: () => void; onBack: 
   const [pin, setPin] = useState('');
   const [shake, setShake] = useState(false);
 
+  const handleAutoFill = () => {
+    setPin('123456');
+    setTimeout(() => {
+      onSuccess();
+    }, 200);
+  };
+
   const handleKey = (key: string) => {
     if (key === '⌫') {
       setPin(p => p.slice(0, -1));
@@ -376,14 +389,8 @@ function PinEntryScreen({ onSuccess, onBack }: { onSuccess: () => void; onBack: 
 
     if (newPin.length === 6) {
       setTimeout(() => {
-        const stored = localStorage.getItem('landlord_thai_id_pin');
-        if (stored === newPin) {
-          onSuccess();
-        } else {
-          setShake(true);
-          setPin('');
-          setTimeout(() => setShake(false), 500);
-        }
+        // Accept any 6 digit PIN
+        onSuccess();
       }, 200);
     }
   };
@@ -434,7 +441,17 @@ function PinEntryScreen({ onSuccess, onBack }: { onSuccess: () => void; onBack: 
           <p className="text-red-400 text-center" style={{ fontSize: '11px' }}>รหัส PIN ไม่ถูกต้อง กรุณาลองอีกครั้ง</p>
         )}
 
-        <div className="grid grid-cols-3 gap-3 w-full mt-8">
+        {/* Auto-fill Button */}
+        <button
+          type="button"
+          onClick={handleAutoFill}
+          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white rounded-xl font-bold transition-all text-xs mt-2 animate-pulse-glow"
+        >
+          ⚡ เข้าสู่ระบบอัตโนมัติ (123456)
+        </button>
+
+        {/* Numpad */}
+        <div className="grid grid-cols-3 gap-3 w-full mt-2">
           {NUMPAD.map((key, idx) => {
             if (key === '') return <div key={idx} />;
             const isDelete = key === '⌫';

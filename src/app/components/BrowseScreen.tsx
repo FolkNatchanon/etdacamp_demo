@@ -177,7 +177,9 @@ function DormCard({
   return (
     <button
       onClick={onTap}
-      className="w-full bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden text-left active:scale-[0.98] transition-transform"
+      className={`w-full bg-white rounded-3xl border shadow-sm overflow-hidden text-left active:scale-[0.98] transition-transform ${
+        dorm.id === "d1" ? "animate-pulse-glow border-indigo-500/50" : "border-gray-100"
+      }`}
     >
       {/* Coloured header strip */}
       <div
@@ -321,7 +323,7 @@ export default function BrowseScreen({ onNavigate }: BrowseScreenProps) {
       : filter === "male"   ? d.genderPolicy === "male"
       : filter === "female" ? d.genderPolicy === "female"
       : true;
-    return matchesQuery && matchesFilter;
+    return matchesQuery && matchesFilter && d.id === "d1";
   });
 
   const handleDormTap = (dorm: Dorm) => {

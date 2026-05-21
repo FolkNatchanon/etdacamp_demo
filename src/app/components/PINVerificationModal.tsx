@@ -109,10 +109,19 @@ export default function PINVerificationModal({
           </p>
         )}
 
+        {/* Auto-fill Button */}
+        <button
+          type="button"
+          onClick={() => verifyPin("123456")}
+          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white rounded-xl font-bold transition-all text-sm animate-pulse-glow flex items-center justify-center gap-2"
+        >
+          ⚡ ยืนยันอัตโนมัติ (123456)
+        </button>
+
         {/* Help text */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <p className="text-xs text-blue-800">
-            💡 <span className="font-semibold">สำหรับการทดสอบ:</span> ใส่รหัส PIN 6 หลักใดก็ได้
+            💡 <span className="font-semibold">สำหรับการทดสอบ:</span> ใส่รหัส PIN 6 หลักใดก็ได้ หรือกดปุ่มยืนยันอัตโนมัติ
           </p>
         </div>
       </div>
