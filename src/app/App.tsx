@@ -16,6 +16,7 @@ import NavigableFrame10 from './components/NavigableFrame10';
 import NavigableFrame12 from './components/NavigableFrame12';
 import DormDetailPage from './components/DormDetailPage';
 import type { ShellTab } from './components/StudentShell';
+import DemoTourGuide from './components/DemoTourGuide';
 import { 
   ArrowLeft, 
   Smartphone, 
@@ -103,47 +104,60 @@ export default function App() {
   ].includes(currentScreen);
 
   // 1. Portal Page - Full-screen responsive PortalLanding
-  if (isPortal) {
-    return (
-      <div className="w-full min-h-screen flex flex-col bg-[#0B0F19] text-slate-100 relative overflow-hidden select-none animate-fade-in">
-        {/* Decorative background gradients to keep Portal Landing premium */}
-        <div className="absolute top-[10%] left-[10%] w-[350px] h-[350px] bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-[10%] right-[10%] w-[350px] h-[350px] bg-purple-600/20 rounded-full blur-[100px] pointer-events-none" />
+  const renderLayout = () => {
+    if (isPortal) {
+      return (
+        <div className="w-full min-h-screen flex flex-col bg-[#0B0F19] text-slate-100 relative overflow-hidden select-none animate-fade-in">
+          {/* Decorative background gradients to keep Portal Landing premium */}
+          <div className="absolute top-[10%] left-[10%] w-[350px] h-[350px] bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute bottom-[10%] right-[10%] w-[350px] h-[350px] bg-purple-600/20 rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="relative z-10 flex-1 flex flex-col justify-between">
-          {renderScreen()}
-        </div>
-      </div>
-    );
-  }
-
-  // 2. Mobile Wallet Screen Wrapper - A clean responsive card container on desktop, full-screen on mobile
-  if (isMobileWallet) {
-    return (
-      <div className="w-full h-[100dvh] md:min-h-screen flex items-center justify-center bg-[#F5F6FA] select-none relative">
-        {/* Clean responsive container - Card layout on desktop, full screen on mobile */}
-        <div className="w-full h-full md:h-[800px] md:max-h-[90vh] md:max-w-md bg-white md:rounded-[24px] md:shadow-[0_10px_40px_rgba(0,0,0,0.06)] md:border md:border-slate-200/80 overflow-hidden relative flex flex-col z-10 transition-all duration-300">
-          <div className="flex-1 overflow-hidden relative bg-white flex flex-col">
+          <div className="relative z-10 flex-1 flex flex-col justify-between">
             {renderScreen()}
           </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  // 3. Desktop Console Dashboard Screen Wrapper - Full-screen dashboard app
-  if (isDesktopConsole) {
+    // 2. Mobile Wallet Screen Wrapper - A clean responsive card container on desktop, full-screen on mobile
+    if (isMobileWallet) {
+      return (
+        <div className="w-full h-[100dvh] md:min-h-screen flex items-center justify-center bg-[#F5F6FA] select-none relative">
+          {/* Clean responsive container - Card layout on desktop, full screen on mobile */}
+          <div className="w-full h-full md:h-[800px] md:max-h-[90vh] md:max-w-md bg-white md:rounded-[24px] md:shadow-[0_10px_40px_rgba(0,0,0,0.06)] md:border md:border-slate-200/80 overflow-hidden relative flex flex-col z-10 transition-all duration-350">
+            <div className="flex-1 overflow-hidden relative bg-white flex flex-col">
+              {renderScreen()}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. Desktop Console Dashboard Screen Wrapper - Full-screen dashboard app
+    if (isDesktopConsole) {
+      return (
+        <div className="w-full h-screen flex flex-col bg-[#F8F9FC] text-slate-950 overflow-hidden">
+          {renderScreen()}
+        </div>
+      );
+    }
+
+    // Fallback
     return (
-      <div className="w-full h-screen flex flex-col bg-[#F8F9FC] text-slate-950 overflow-hidden">
+      <div className="w-full min-h-screen flex flex-col bg-[#F8F9FC] text-slate-950">
         {renderScreen()}
       </div>
     );
-  }
+  };
 
-  // Fallback
   return (
-    <div className="w-full min-h-screen flex flex-col bg-[#F8F9FC] text-slate-950">
-      {renderScreen()}
-    </div>
+    <>
+      {renderLayout()}
+      <DemoTourGuide
+        currentScreen={currentScreen}
+        shellTab={shellTab}
+        onNavigate={(screen, tab) => navigate(screen, tab)}
+      />
+    </>
   );
 }
