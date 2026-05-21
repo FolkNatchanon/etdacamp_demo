@@ -15,6 +15,7 @@ import TenantDetailPage from './components/TenantDetailPage';
 import NavigableFrame10 from './components/NavigableFrame10';
 import NavigableFrame12 from './components/NavigableFrame12';
 import DormDetailPage from './components/DormDetailPage';
+import ParkingScreen from './components/ParkingScreen';
 import type { ShellTab } from './components/StudentShell';
 import DemoTourGuide from './components/DemoTourGuide';
 import { 
@@ -40,6 +41,7 @@ export default function App() {
       'trustwallet_p1_disclosed_fields',
       'trustwallet_student_id',
       'trustwallet_show_documents',
+      'trustwallet_dorm_credential',
       'landlord_thai_id_pin',
       'landlord_wallet_credentials',
       'selected_dorm_gender',
@@ -86,6 +88,8 @@ export default function App() {
         return <NavigableFrame12 onNavigate={(screen, tab) => navigate(screen, tab)} />;
       case 'dorm-detail':
         return <DormDetailPage   onNavigate={s => navigate(s)} />;
+      case 'parking':
+        return <ParkingScreen    onNavigate={(s, t) => navigate(s, t)} />;
 
       default:
         return <PortalLanding onNavigate={s => navigate(s)} />;
@@ -106,13 +110,14 @@ export default function App() {
     '08': 'Verification Tier',
     '09': 'e-Contract Dual Sign',
     'dorm-detail': 'Dormitory Detail',
+    'parking': 'Smart Parking — Verified Access',
   };
 
   const isPortal = currentScreen === '00';
   
   // Mobile wallets flow (Student Wallet + Landlord Wallet flows + Landlord Console)
   const isMobileWallet = [
-    '01', '02', '03', '04', '05', '08', '09', 'dorm-detail', // Student Wallet flow
+    '01', '02', '03', '04', '05', '08', '09', 'dorm-detail', 'parking', // Student Wallet flow
     '06', 'landlord-wallet', // Landlord Wallet flow
     'landlord', '07' // Landlord console dashboard & tenant detail screens
   ].includes(currentScreen);

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft, ShieldCheck, Loader2, CheckCircle2,
   CreditCard, Lock, FileText, Award, ClipboardList, University,
-  Download, ChevronRight, Plus, X, RefreshCw, Smartphone, Building2, Clock, AlertCircle, FileCode,
+  Download, ChevronRight, Plus, X, RefreshCw, Smartphone, Building2, Clock, AlertCircle, FileCode, Car,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import JSONInspectorModal from './JSONInspectorModal';
@@ -992,6 +992,71 @@ function TenantCredentialsSection() {
   );
 }
 
+// ─── Dorm Access Card Section ─────────────────────────────────────────────────
+
+function DormAccessCardSection({ onNavigate }: { onNavigate: (screen: string, tab?: any) => void }) {
+  const [cred, setCred] = useState<any>(null);
+
+  useEffect(() => {
+    const poll = () => {
+      try {
+        const raw = localStorage.getItem('trustwallet_dorm_credential');
+        setCred(raw ? JSON.parse(raw) : null);
+      } catch { setCred(null); }
+    };
+    poll();
+    const id = setInterval(poll, 800);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!cred) return null;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-gray-500 mb-2" style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+        บัตรสิทธิ์หอพัก
+      </p>
+
+      {/* Dorm Access Card */}
+      <div className="rounded-2xl overflow-hidden border-2 border-indigo-200 shadow-sm">
+        <div className="px-4 py-3 text-white" style={{ background: 'linear-gradient(135deg,#1e40af,#4f46e5,#6d28d9)' }}>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-white/60 font-bold" style={{ fontSize: 8, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Dorm Access Card · Verifiable Credential</p>
+            <ShieldCheck size={13} className="text-white/60" />
+          </div>
+          <p className="text-white font-black" style={{ fontSize: 15 }}>{cred.dormName}</p>
+          <p className="text-indigo-200" style={{ fontSize: 11 }}>นายสมชาย ใจดี · ห้อง {cred.room} · อาคาร {cred.building}</p>
+        </div>
+        <div className="bg-white px-4 py-2.5 flex items-center justify-between">
+          <div className="space-y-0.5">
+            <p className="text-gray-400" style={{ fontSize: 9 }}>สิทธิ์ที่ได้รับ</p>
+            <p className="text-gray-800 font-bold" style={{ fontSize: 11 }}>จอดรถอาคาร {cred.building} · WiFi · ห้องซักผ้า · Gym</p>
+          </div>
+          <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <p className="text-emerald-600 font-bold" style={{ fontSize: 9 }}>Active</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Parking CTA */}
+      <button
+        onClick={() => onNavigate('parking')}
+        className="w-full flex items-center gap-3 bg-slate-900 text-white rounded-2xl px-4 py-3 active:scale-[0.98] transition-all animate-pulse-glow"
+      >
+        <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
+          <Car size={18} className="text-indigo-400" />
+        </div>
+        <div className="flex-1 text-left">
+          <p className="text-white font-bold" style={{ fontSize: 13 }}>ทดลองใช้ที่จอดรถอัจฉริยะ</p>
+          <p className="text-slate-400" style={{ fontSize: 10 }}>สแกน QR ที่ตู้จอดรถ อาคาร {cred.building}</p>
+        </div>
+        <ChevronRight size={16} className="text-slate-400 shrink-0" />
+      </button>
+    </div>
+  );
+}
+
 // ─── Main documents hub ───────────────────────────────────────────────────────
 
 function MainDocs({ onBack }: { onBack: () => void }) {
@@ -1230,6 +1295,9 @@ function MainDocs({ onBack }: { onBack: () => void }) {
 
         {/* Student ID Credential — shown always; other sections only after student ID is saved */}
         <StudentIDSection />
+
+        {/* Dorm Access Credential — shown after contract is signed and credential is received */}
+        <DormAccessCardSection onNavigate={onBack} />
 
         {/* Tenant Credentials Section — hidden during onboarding */}
         {!isStudentIdSaved ? null : /* Tenant section below */true && <>

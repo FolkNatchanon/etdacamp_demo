@@ -22,6 +22,7 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
   const [isThaiIdRegistered, setIsThaiIdRegistered] = useState(false);
   const [isStudentIdSaved, setIsStudentIdSaved] = useState(false);
   const [isContractSigned, setIsContractSigned] = useState(false);
+  const [isDormCredReceived, setIsDormCredReceived] = useState(false);
 
   // Sync state with localStorage every second
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
       setIsThaiIdRegistered(!!localStorage.getItem('trustwallet_registered'));
       setIsStudentIdSaved(localStorage.getItem('trustwallet_student_id') === 'saved');
       setIsContractSigned(!!localStorage.getItem('trustwallet_contract_signed'));
+      setIsDormCredReceived(!!localStorage.getItem('trustwallet_dorm_credential'));
     };
     checkState();
     const interval = setInterval(checkState, 800);
@@ -172,7 +174,7 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
       trustTech: 'Dual Signature & Non-repudiation: อ้างอิง พ.ร.บ. ธุรกรรมฯ ม.26 และ ม.28 ผูกพันทางกฎหมาย 100%',
       actionText: 'ลงนามสัญญาเช่า Face ID',
       isActive: currentScreen === '09',
-      isCompleted: isContractSigned,
+      isCompleted: isContractSigned && isDormCredReceived,
       warp: () => {
         localStorage.setItem('trustwallet_registered', '1');
         localStorage.setItem('trustwallet_pin', '123456');
@@ -197,6 +199,60 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
         setIsStudentIdSaved(true);
         onNavigate('09');
       }
+    },
+    {
+      num: 8,
+      title: 'รับ Dorm Access Credential จากเจ้าของหอ',
+      subtitle: 'Issuer → Holder (Landlord)',
+      desc: 'หลังลงนาม modal จะแสดงเอง — กด “รับ Credential ลง Trust Wallet” เพื่อเก็บบัตรสิทธิ์หอพัก แล้วระบบจะพามาหน้า Documents ทันที',
+      trustTech: 'Post-Contract VC Issuance: เจ้าของหอออก VC สิทธิ์ใช้งานหอพักโดยตรง ผูกพันกับสัญญาเช่าที่ลงนามแล้ว',
+      actionText: 'รับ Dorm Access Card VC',
+      isActive: currentScreen === '09' && isContractSigned && !isDormCredReceived,
+      isCompleted: isDormCredReceived,
+      warp: () => {
+        localStorage.setItem('trustwallet_registered', '1');
+        localStorage.setItem('trustwallet_pin', '123456');
+        localStorage.setItem('trustwallet_student_id', 'saved');
+        localStorage.setItem('trustwallet_contract_signed', 'true');
+        localStorage.setItem('trustwallet_p1_disclosed_fields', JSON.stringify(['name', 'status', 'university', 'faculty', 'year']));
+        localStorage.setItem('landlord_thai_id_pin', '123456');
+        setIsThaiIdRegistered(true);
+        setIsStudentIdSaved(true);
+        setIsContractSigned(true);
+        onNavigate('09');
+      }
+    },
+    {
+      num: 9,
+      title: 'ทดลองใช้ที่จอดรถอัจฉริยะ (Verified Parking)',
+      subtitle: 'Credential-Based Access Control',
+      desc: 'สแกน QR ที่ตู้จอดรถ ระบบจะตรวจสอบ Credential อัตโนมัติว่าสิทธิ์จอดรถอาคาร A หรือไม่ — โดยไม่ต้องสมัครหรือแสดงบัตรให้เจ้าหน้าที่เลย',
+      trustTech: 'VC-Based Access Control: Zero-Knowledge เปิดแค่สิทธิ์ประตูบานตาม Credential โดยไม่เปิดเผยข้อมูลส่วนตัว',
+      actionText: 'ทดลอง Parking QR Scan',
+      isActive: currentScreen === 'parking',
+      isCompleted: false,
+      warp: () => {
+        const dormCred = {
+          id: 'dorm-access-demo',
+          type: 'DormAccessCard',
+          dormName: 'Happy Campus Dorm',
+          building: 'A',
+          room: 'A-502',
+          floor: '5',
+          issuer: 'นายสมศักดิ์ รักสงบ',
+          issuedAt: new Date().toISOString(),
+          permissions: ['parking_building_A', 'wifi_access'],
+        };
+        localStorage.setItem('trustwallet_registered', '1');
+        localStorage.setItem('trustwallet_student_id', 'saved');
+        localStorage.setItem('trustwallet_contract_signed', 'true');
+        localStorage.setItem('trustwallet_dorm_credential', JSON.stringify(dormCred));
+        setIsThaiIdRegistered(true);
+        setIsStudentIdSaved(true);
+        setIsContractSigned(true);
+        setIsDormCredReceived(true);
+        onNavigate('parking');
+      }
     }
   ];
 
@@ -209,9 +265,11 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
     localStorage.removeItem('trustwallet_contract_signed');
     localStorage.removeItem('trustwallet_p1_disclosed_fields');
     localStorage.removeItem('trustwallet_student_id');
+    localStorage.removeItem('trustwallet_dorm_credential');
     setIsThaiIdRegistered(false);
     setIsStudentIdSaved(false);
     setIsContractSigned(false);
+    setIsDormCredReceived(false);
     onNavigate('00');
   };
 
@@ -231,6 +289,8 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
             {currentStep.num === 5 && "👉 ตรวจสอบ P5 → กด 'ยินยอมแชร์ข้อมูล'"}
             {currentStep.num === 6 && "👉 กดดู 'สมชาย ใจดี' → Approve Tenant"}
             {currentStep.num === 7 && "👉 เลื่อนลงล่าง → ลงนามด้วย Face ID"}
+            {currentStep.num === 8 && "👉 กด 'รับ Credential ลง Trust Wallet'"}
+            {currentStep.num === 9 && "👉 กดสแกน QR → ดูผลอนุญาตจอดรถ"}
           </div>
         </div>
 

@@ -11,7 +11,12 @@ import {
   Check, 
   Sparkles,
   Smartphone,
-  Eye
+  Eye,
+  Download,
+  Building2,
+  Car,
+  X,
+  ArrowRight,
 } from 'lucide-react';
 import JSONInspectorModal from './JSONInspectorModal';
 
@@ -26,6 +31,7 @@ export default function NavigableFrame12({ onNavigate }: NavigableFrame12Props) 
   
   const [signingStatus, setSigningStatus] = useState<'unsigned' | 'scanning' | 'success' | 'signed'>('unsigned');
   const [showJsonInspector, setShowJsonInspector] = useState(false);
+  const [showDormCredModal, setShowDormCredModal] = useState(false);
 
   const contractHash = 'd2b4a530581f4952b2eb11d18969f623eb0c44298fc1c149afbf4c8996fb924';
   const studentDid = 'did:key:z6Mku8VdfU6551mJtLqyvH34RkW3Dk29fWpUv32n9h76L8jK';
@@ -57,12 +63,34 @@ export default function NavigableFrame12({ onNavigate }: NavigableFrame12Props) 
       setSigningStatus('success');
       // Save signature state to localStorage
       localStorage.setItem('trustwallet_contract_signed', 'true');
+      // Show dorm credential modal after 1 second
+      setTimeout(() => setShowDormCredModal(true), 1000);
     }, 2000);
+  };
+
+  const handleReceiveDormCredential = () => {
+    // Save the dorm access credential
+    const dormCred = {
+      id: `dorm-access-${Date.now()}`,
+      type: 'DormAccessCard',
+      dormName: 'Happy Campus Dorm',
+      building: 'A',
+      room: 'A-502',
+      floor: '5',
+      issuer: 'นายสมศักดิ์ รักสงบ (Happy Campus Dorm)',
+      issuedAt: new Date().toISOString(),
+      validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      permissions: ['parking_building_A', 'wifi_access', 'laundry_room', 'gym'],
+    };
+    localStorage.setItem('trustwallet_dorm_credential', JSON.stringify(dormCred));
+    setShowDormCredModal(false);
+    // Navigate to docs tab to show the new credential
+    onNavigate('01', 'docs');
   };
 
   const handleFinishSigning = () => {
     setSigningStatus('signed');
-    onNavigate('01', 'dorm');
+    setShowDormCredModal(true);
   };
 
   const contractVP = {
@@ -366,6 +394,71 @@ export default function NavigableFrame12({ onNavigate }: NavigableFrame12Props) 
           jsonData={contractVP}
           onClose={() => setShowJsonInspector(false)}
         />
+      )}
+
+      {/* Dorm Access Credential Receive Modal */}
+      {showDormCredModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-50 animate-fade-in" style={{ backdropFilter: 'blur(4px)' }}>
+          <div className="bg-white w-full rounded-t-3xl px-5 pb-10 pt-5 space-y-4 max-w-md">
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-2" />
+
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center shrink-0">
+                <Building2 size={24} className="text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-gray-900 font-black" style={{ fontSize: 15 }}>ได้รับ Credential จากเจ้าของหอ!</p>
+                <p className="text-gray-500" style={{ fontSize: 11 }}>บัตรผ่านสิทธิ์ประจำหอพัก</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border-2 border-indigo-200 shadow-lg shadow-indigo-100">
+              <div className="px-4 py-3 text-white" style={{ background: 'linear-gradient(135deg,#1e40af,#4f46e5,#6d28d9)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-white/70 font-bold" style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Dorm Access Card · VC</p>
+                  <ShieldCheck size={14} className="text-white/70" />
+                </div>
+                <p className="text-white font-black" style={{ fontSize: 16 }}>Happy Campus Dorm</p>
+                <p className="text-indigo-200" style={{ fontSize: 12 }}>นายสมชาย ใจดี · ห้อง A-502</p>
+              </div>
+              <div className="bg-white px-4 py-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded bg-indigo-50 flex items-center justify-center shrink-0">
+                    <Building2 size={12} className="text-indigo-500" />
+                  </div>
+                  <div>
+                    <p className="text-gray-400" style={{ fontSize: 9 }}>อาคาร / สิทธิ์จอดรถ</p>
+                    <p className="text-gray-800 font-bold" style={{ fontSize: 11 }}>อาคาร A (Building A)</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded bg-indigo-50 flex items-center justify-center shrink-0">
+                    <Car size={12} className="text-indigo-500" />
+                  </div>
+                  <div>
+                    <p className="text-gray-400" style={{ fontSize: 9 }}>สิทธิ์เพิ่มเติม</p>
+                    <p className="text-gray-800 font-bold" style={{ fontSize: 11 }}>WiFi · ห้องซักผ้า · Gym</p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-gray-100 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <p className="text-emerald-600 font-bold" style={{ fontSize: 10 }}>Active · Valid 1 ปี</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleReceiveDormCredential}
+              className="w-full py-4 rounded-2xl text-white font-black flex items-center justify-center gap-2 active:scale-[0.98] transition-all animate-pulse-glow shadow-lg shadow-indigo-200"
+              style={{ background: 'linear-gradient(135deg,#1e40af,#4f46e5)', fontSize: 14 }}
+            >
+              <Download size={18} />
+              รับ Credential ลง Trust Wallet
+              <ArrowRight size={16} />
+            </button>
+            <p className="text-center text-gray-400" style={{ fontSize: 10 }}>VC นี้ออกโดย: นายสมศักดิ์ รักสงบ (Happy Campus Dorm)</p>
+          </div>
+        </div>
       )}
     </div>
   );
