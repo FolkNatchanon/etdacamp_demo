@@ -1,10 +1,17 @@
 import { useState } from 'react';
-import { Shield, X, CheckCircle2, Building2 } from 'lucide-react';
+import { Shield, X, CheckCircle2, Building2, Lock } from 'lucide-react';
+
+interface CredentialField {
+  name: string;
+  value: string;
+  disclosed: boolean;
+}
 
 interface CredentialRequest {
   verifier: string;
   requestedCredentials: string[];
   purpose?: string;
+  fields?: CredentialField[];
 }
 
 interface CredentialRequestModalProps {
@@ -74,15 +81,49 @@ export default function CredentialRequestModal({
             ข้อมูลที่ขอแชร์:
           </p>
           <div className="space-y-2">
-            {request.requestedCredentials.map((credential, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-2 text-sm text-gray-600 bg-green-50 p-2 rounded-lg"
-              >
-                <CheckCircle2 size={16} className="text-green-600" />
-                <span>{credential}</span>
-              </div>
-            ))}
+            {request.fields && request.fields.length > 0 ? (
+              request.fields.map((field, idx) => (
+                <div
+                  key={idx}
+                  className={`flex items-center justify-between p-2.5 rounded-xl text-sm transition-all border ${
+                    field.disclosed
+                      ? "bg-emerald-50/60 border-emerald-100/80 text-emerald-950"
+                      : "bg-slate-50 border border-slate-100 text-slate-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {field.disclosed ? (
+                      <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                    ) : (
+                      <Lock size={16} className="text-slate-400 shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-[9px] text-slate-500 font-extrabold tracking-wider uppercase">{field.name}</p>
+                      <p className={`font-bold mt-0.5 text-xs truncate ${!field.disclosed ? "blur-[3px] select-none text-slate-300" : "text-slate-800"}`}>
+                        {field.value}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                    field.disclosed 
+                      ? "bg-emerald-100 text-emerald-800" 
+                      : "bg-slate-200 text-slate-600 font-medium"
+                  }`}>
+                    {field.disclosed ? "แชร์ข้อมูล" : "ปกปิด"}
+                  </span>
+                </div>
+              ))
+            ) : (
+              request.requestedCredentials.map((credential, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 text-sm text-gray-600 bg-green-50 p-2 rounded-lg"
+                >
+                  <CheckCircle2 size={16} className="text-green-600" />
+                  <span>{credential}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -90,7 +131,7 @@ export default function CredentialRequestModal({
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <p className="text-xs text-blue-800">
             <span className="font-semibold">🔒 ความเป็นส่วนตัว:</span>{' '}
-            เฉพาะข้อมูลที่แสดงด้านบนเท่านั้นจะถูกแชร์
+            เฉพาะข้อมูลที่แสดงสถานะแชร์ข้อมูลเท่านั้นจะถูกส่งไปยังผู้ขอข้อมูล
           </p>
         </div>
 

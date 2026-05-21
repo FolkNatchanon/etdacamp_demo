@@ -217,6 +217,11 @@ export default function StudentShell({
   initialTab = "home",
 }: StudentShellProps) {
   const [tab, setTab] = useState<ShellTab>(initialTab);
+
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab]);
+
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [showPINVerification, setShowPINVerification] = useState(false);
   const [pendingQRData, setPendingQRData] = useState<string | null>(null);
@@ -224,6 +229,7 @@ export default function StudentShell({
     verifier: string;
     requestedCredentials: string[];
     purpose?: string;
+    fields?: any[];
   } | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -234,14 +240,24 @@ export default function StudentShell({
   const [isStudentIdSaved, setIsStudentIdSaved] = useState(
     () => localStorage.getItem("trustwallet_student_id") === "saved"
   );
+  const [isDormCredReceived, setIsDormCredReceived] = useState(
+    () => !!localStorage.getItem("trustwallet_dorm_credential")
+  );
+  const [isParkingCompleted, setIsParkingCompleted] = useState(
+    () => localStorage.getItem("trustwallet_parking_completed") === "true"
+  );
 
   // Poll localStorage to detect when IDs are saved
   useEffect(() => {
     const poll = () => {
       const thaiId = !!localStorage.getItem("trustwallet_registered");
       const studentId = localStorage.getItem("trustwallet_student_id") === "saved";
+      const dormCred = !!localStorage.getItem("trustwallet_dorm_credential");
+      const parkingDone = localStorage.getItem("trustwallet_parking_completed") === "true";
       setIsThaiIdRegistered(thaiId);
       setIsStudentIdSaved(studentId);
+      setIsDormCredReceived(dormCred);
+      setIsParkingCompleted(parkingDone);
     };
     const id = setInterval(poll, 800);
     return () => clearInterval(id);
@@ -295,6 +311,7 @@ export default function StudentShell({
       "08",
       "09",
       "00",
+      "parking",
     ];
     if (breakout.includes(screen)) {
       onNavigate(screen);
@@ -325,6 +342,7 @@ export default function StudentShell({
             "สถานะการเป็นนักศึกษา",
           ],
           purpose: qrData.purpose || "ยืนยันตัวตนเพื่อเช่าหอพัก",
+          fields: qrData.fields || undefined,
         });
       } catch (e) {
         setCredentialRequest({
@@ -346,11 +364,20 @@ export default function StudentShell({
   };
 
   const handleApproveCredential = () => {
+    const isParking = credentialRequest?.verifier?.includes("จอดรถ") || credentialRequest?.fields?.some(f => f.name.includes("จอดรถ") || f.name.includes("อาคาร"));
     setCredentialRequest(null);
     setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-    }, 2000);
+    if (isParking) {
+      localStorage.setItem('trustwallet_parking_autostart', 'true');
+      setTimeout(() => {
+        setShowSuccess(false);
+        onNavigate('parking');
+      }, 1500);
+    } else {
+      setTimeout(() => {
+        setShowSuccess(false);
+      }, 2000);
+    }
   };
 
   const handleDenyCredential = () => {
@@ -403,7 +430,7 @@ export default function StudentShell({
           const active = activeTab === id;
           // Lock: during onboarding, all tabs are locked except docs (or home after complete)
           const isLocked = !onboardingComplete && id !== forcedTab;
-          const isHomePulse = onboardingComplete && id === "home" && activeTab === "docs";
+          const isHomePulse = onboardingComplete && !isDormCredReceived && id === "home" && activeTab === "docs";
           return (
             <button
               key={id}
@@ -432,7 +459,7 @@ export default function StudentShell({
               onboardingComplete
                 ? "bg-gradient-to-br from-indigo-600 to-indigo-700 hover:shadow-xl hover:scale-105 active:scale-95"
                 : "bg-gray-200 pointer-events-none opacity-30"
-            }`}
+            } ${isDormCredReceived && !isParkingCompleted ? "animate-pulse-glow border-indigo-600 shadow-indigo-300" : ""}`}
             style={{
               border: "4px solid white",
             }}

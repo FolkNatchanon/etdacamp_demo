@@ -22,6 +22,23 @@ export default function ParkingScreen({ onNavigate }: ParkingScreenProps) {
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [countdown, setCountdown] = useState(3);
 
+  // Auto-start parking gate simulation if redirected from approval
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const autostart = localStorage.getItem('trustwallet_parking_autostart');
+      if (autostart === 'true') {
+        localStorage.removeItem('trustwallet_parking_autostart');
+        setScanState('scanning');
+        setTimeout(() => {
+          setScanState('verifying');
+          setTimeout(() => {
+            setScanState('granted');
+          }, 1800);
+        }, 1500);
+      }
+    }
+  }, []);
+
   // Check credential from localStorage
   const credential = (() => {
     try {
@@ -45,22 +62,23 @@ export default function ParkingScreen({ onNavigate }: ParkingScreenProps) {
     }, 1500);
   };
 
-  // Countdown after granted to auto-reset
+  // Countdown after granted to auto-reset and switch to My Dorm screen
   useEffect(() => {
     if (scanState !== 'granted') return;
+    localStorage.setItem('trustwallet_parking_completed', 'true');
     setCountdown(5);
     const interval = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(interval);
-          setScanState('idle');
+          onNavigate('01', 'dorm');
           return 5;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [scanState]);
+  }, [scanState, onNavigate]);
 
   return (
     <div className="size-full flex flex-col bg-[#0F172A] text-white overflow-hidden">
@@ -245,7 +263,7 @@ export default function ParkingScreen({ onNavigate }: ParkingScreenProps) {
               ))}
             </div>
 
-            <p className="text-slate-500" style={{ fontSize: 10 }}>รีเซ็ตอัตโนมัติใน {countdown} วินาที</p>
+            <p className="text-slate-400 font-bold" style={{ fontSize: 10 }}>กำลังพาไปหน้าบิลค่าเช่าหอพักใน {countdown} วินาที...</p>
           </div>
         )}
       </div>

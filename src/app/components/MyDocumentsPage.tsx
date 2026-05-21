@@ -996,6 +996,9 @@ function TenantCredentialsSection() {
 
 function DormAccessCardSection({ onNavigate }: { onNavigate: (screen: string, tab?: any) => void }) {
   const [cred, setCred] = useState<any>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [showJsonInspector, setShowJsonInspector] = useState(false);
+  const [hasViewedDetails, setHasViewedDetails] = useState(false);
 
   useEffect(() => {
     const poll = () => {
@@ -1011,14 +1014,64 @@ function DormAccessCardSection({ onNavigate }: { onNavigate: (screen: string, ta
 
   if (!cred) return null;
 
+  const dormAddress = "123/45 อาคาร A ถนนพญาไท แขวงวังใหม่ เขตปทุมวัน กรุงเทพมหานคร 10330";
+  const leaseStartDate = "1 มิถุนายน 2569";
+  const leaseEndDate = "31 พฤษภาคม 2570";
+  const subjectDid = "did:key:z6Mku8VdfU6551mJtLqyvH34RkW3Dk29fWpUv32n9h76L8jK";
+
+  const dormVcJson = {
+    "@context": [
+      "https://www.w3.org/2018/credentials/v2",
+      "https://schema.org"
+    ],
+    "id": "urn:uuid:dorm-access-happy-campus-a502",
+    "type": ["VerifiableCredential", "DormAccessCredential"],
+    "issuer": cred.issuer || "did:web:abcmansion.trust.in.th",
+    "issuanceDate": cred.issuedAt || new Date().toISOString(),
+    "expirationDate": cred.validUntil || new Date(Date.now() + 365*24*60*60*1000).toISOString(),
+    "credentialSubject": {
+      "id": subjectDid,
+      "tenantName": "นายสมชาย ใจดี",
+      "dormName": cred.dormName || "Happy Campus Dorm",
+      "dormAddress": dormAddress,
+      "roomNumber": cred.room || "A-502",
+      "building": cred.building || "A",
+      "floor": cred.floor || "5",
+      "leaseStartDate": "2026-06-01",
+      "leaseEndDate": "2027-05-31",
+      "parkingPermission": "parking_building_A",
+      "status": "Active"
+    },
+    "proof": {
+      "type": "JsonWebSignature2020",
+      "created": "2026-05-21T07:05:00Z",
+      "proofPurpose": "assertionMethod",
+      "verificationMethod": "did:web:abcmansion.trust.in.th#key-1",
+      "jws": "eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..abcmansion-sig-dorm-9274921"
+    }
+  };
+
+  const handleCardClick = () => {
+    setShowDetails(true);
+    setHasViewedDetails(true);
+  };
+
   return (
     <div className="space-y-2">
       <p className="text-gray-500 mb-2" style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase' }}>
         บัตรสิทธิ์หอพัก
       </p>
 
-      {/* Dorm Access Card */}
-      <div className="rounded-2xl overflow-hidden border-2 border-indigo-200 shadow-sm">
+      {/* Dorm Access Card - Clickable to open VC details */}
+      <div 
+        onClick={handleCardClick}
+        className={`rounded-2xl overflow-hidden border-2 shadow-sm cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all hover:shadow-indigo-100 hover:shadow-md ${
+          !hasViewedDetails 
+            ? 'animate-pulse-glow border-indigo-600 shadow-indigo-200 shadow-lg' 
+            : 'border-indigo-200'
+        }`}
+        title="คลิกเพื่อดูรายละเอียดบัตรผ่าน (VC)"
+      >
         <div className="px-4 py-3 text-white" style={{ background: 'linear-gradient(135deg,#1e40af,#4f46e5,#6d28d9)' }}>
           <div className="flex items-center justify-between mb-1">
             <p className="text-white/60 font-bold" style={{ fontSize: 8, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Dorm Access Card · Verifiable Credential</p>
@@ -1029,30 +1082,145 @@ function DormAccessCardSection({ onNavigate }: { onNavigate: (screen: string, ta
         </div>
         <div className="bg-white px-4 py-2.5 flex items-center justify-between">
           <div className="space-y-0.5">
-            <p className="text-gray-400" style={{ fontSize: 9 }}>สิทธิ์ที่ได้รับ</p>
+            <p className="text-gray-400" style={{ fontSize: 9 }}>สิทธิ์ที่ได้รับ (คลิกเพื่อดูรายละเอียด VC)</p>
             <p className="text-gray-800 font-bold" style={{ fontSize: 11 }}>จอดรถอาคาร {cred.building} · WiFi · ห้องซักผ้า · Gym</p>
           </div>
-          <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+          <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 animate-pulse">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <p className="text-emerald-600 font-bold" style={{ fontSize: 9 }}>Active</p>
           </div>
         </div>
       </div>
 
-      {/* Parking CTA */}
-      <button
-        onClick={() => onNavigate('parking')}
-        className="w-full flex items-center gap-3 bg-slate-900 text-white rounded-2xl px-4 py-3 active:scale-[0.98] transition-all animate-pulse-glow"
-      >
-        <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
-          <Car size={18} className="text-indigo-400" />
+      {/* VC Details Modal */}
+      {showDetails && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" style={{ backdropFilter: 'blur(4px)' }}>
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col text-slate-800 animate-scale-in">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-indigo-950 to-slate-900 text-white px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={18} className="text-indigo-400" />
+                <h4 className="text-sm font-bold">Verifiable Credential (VC)</h4>
+              </div>
+              <button 
+                onClick={() => setShowDetails(false)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 max-h-[75vh]">
+              
+              {/* VC Badge Card */}
+              <div className="rounded-2xl overflow-hidden border border-indigo-150 shadow-md">
+                <div className="px-4 py-3 text-white" style={{ background: 'linear-gradient(135deg,#1e40af,#4f46e5,#6d28d9)' }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-white/60 font-bold" style={{ fontSize: 8, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Dorm Access Card</p>
+                    <ShieldCheck size={13} className="text-emerald-400" />
+                  </div>
+                  <p className="text-white font-black" style={{ fontSize: 16 }}>{cred.dormName}</p>
+                  <p className="text-indigo-200" style={{ fontSize: 11 }}>นายสมชาย ใจดี</p>
+                </div>
+                <div className="bg-slate-50 px-4 py-2 border-t border-indigo-50/50 flex justify-between items-center text-[10px]">
+                  <span className="text-slate-400 font-mono text-[8px]">ID: {dormVcJson.id}</span>
+                  <span className="text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">ACTIVE</span>
+                </div>
+              </div>
+
+              {/* Data Table */}
+              <div className="space-y-3">
+                <p className="text-[10px] text-slate-400 font-extrabold tracking-wider uppercase">ข้อมูลภายในบัตร (Credential Subject)</p>
+                
+                <div className="bg-slate-50 rounded-2xl border border-slate-100 p-3.5 space-y-2.5 text-xs">
+                  <div className="grid grid-cols-3 gap-1 pb-2 border-b border-slate-200/60">
+                    <span className="text-slate-400 font-semibold">ผู้ถือบัตร:</span>
+                    <span className="col-span-2 text-slate-800 font-bold">นายสมชาย ใจดี</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 pb-2 border-b border-slate-200/60">
+                    <span className="text-slate-400 font-semibold">ที่ตั้งหอพัก:</span>
+                    <span className="col-span-2 text-slate-700 leading-normal font-medium">{dormAddress}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 pb-2 border-b border-slate-200/60">
+                    <span className="text-slate-400 font-semibold">เลขห้องพัก:</span>
+                    <span className="col-span-2 text-slate-800 font-bold">{cred.room}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 pb-2 border-b border-slate-200/60">
+                    <span className="text-slate-400 font-semibold">อาคารพัก:</span>
+                    <span className="col-span-2 text-slate-800 font-bold">อาคาร {cred.building}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 pb-2 border-b border-slate-200/60">
+                    <span className="text-slate-400 font-semibold">ชั้นพักอาศัย:</span>
+                    <span className="col-span-2 text-slate-800 font-bold">ชั้น {cred.floor}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 pb-2 border-b border-slate-200/60">
+                    <span className="text-slate-400 font-semibold">ระยะเวลาสัญญา:</span>
+                    <span className="col-span-2 text-slate-700 font-medium">{leaseStartDate} ถึง {leaseEndDate}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    <span className="text-slate-400 font-semibold">สถานะการเช่า:</span>
+                    <span className="col-span-2 text-emerald-600 font-extrabold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Active (ใช้งานได้ตามปกติ)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cryptographic signatures details */}
+              <div className="bg-slate-900 rounded-2xl p-3.5 text-white space-y-2 text-[10px]">
+                <div className="flex justify-between items-center text-indigo-400 font-bold tracking-wider uppercase">
+                  <span>W3C VC Cryptography Proof</span>
+                  <ShieldCheck size={12} />
+                </div>
+                <div className="space-y-1 font-mono text-[9px] text-slate-400 leading-normal">
+                  <div className="flex justify-between">
+                    <span>Issuer DID:</span>
+                    <span className="text-slate-300">did:web:abcmansion.trust.in.th</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Subject DID:</span>
+                    <span className="text-slate-300">did:key:z6Mku...76L8jK</span>
+                  </div>
+                  <div className="h-px bg-slate-800 my-1" />
+                  <p className="break-all text-[8px] text-slate-500">
+                    Proof Sign (JWS): {dormVcJson.proof.jws}
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Actions */}
+            <div className="shrink-0 bg-slate-50 border-t border-slate-100 p-4 flex gap-2.5">
+              <button
+                onClick={() => setShowJsonInspector(true)}
+                className="flex-1 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 active:scale-98 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm"
+              >
+                <FileCode size={14} className="text-indigo-600" />
+                ดูโครงสร้าง W3C VC (JSON)
+              </button>
+              <button
+                onClick={() => setShowDetails(false)}
+                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-100"
+              >
+                ปิดหน้าจอ
+              </button>
+            </div>
+
+          </div>
         </div>
-        <div className="flex-1 text-left">
-          <p className="text-white font-bold" style={{ fontSize: 13 }}>ทดลองใช้ที่จอดรถอัจฉริยะ</p>
-          <p className="text-slate-400" style={{ fontSize: 10 }}>สแกน QR ที่ตู้จอดรถ อาคาร {cred.building}</p>
-        </div>
-        <ChevronRight size={16} className="text-slate-400 shrink-0" />
-      </button>
+      )}
+
+      {/* JSON Inspector Modal */}
+      {showJsonInspector && (
+        <JSONInspectorModal
+          title="Dorm Access Verifiable Credential (VC)"
+          jsonData={dormVcJson}
+          onClose={() => setShowJsonInspector(false)}
+        />
+      )}
     </div>
   );
 }

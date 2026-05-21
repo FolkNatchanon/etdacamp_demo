@@ -15,11 +15,34 @@ export default function QRScanner({ onClose, onScan }: QRScannerProps) {
 
     // Mock QR data from verifier
     setTimeout(() => {
-      const mockQRData = JSON.stringify({
-        verifier: "ผู้ให้เช่าหอพัก ABC",
-        credentials: ["ชื่อ-นามสกุล", "เลขบัตรประชาชน", "สถานะการเป็นนักศึกษา"],
-        purpose: "ยืนยันตัวตนเพื่อเช่าหอพัก"
-      });
+      const hasDormCred = localStorage.getItem('trustwallet_dorm_credential');
+      let mockQRData = "";
+
+      if (hasDormCred) {
+        let credObj = { building: 'A', room: 'A-502', floor: '5' };
+        try {
+          credObj = JSON.parse(hasDormCred);
+        } catch (e) {}
+
+        mockQRData = JSON.stringify({
+          verifier: "ระบบจอดรถอัจฉริยะ (Smart Parking A)",
+          purpose: "ตรวจสอบสิทธิ์การเข้าจอดรถของอาคาร " + (credObj.building || "A"),
+          fields: [
+            { name: "อาคารที่อนุญาต", value: "อาคาร " + (credObj.building || "A"), disclosed: true },
+            { name: "สถานะสัญญาเช่า", value: "Active", disclosed: true },
+            { name: "ชื่อ-นามสกุล", value: "นายสมชาย ใจดี", disclosed: false },
+            { name: "เลขห้องพัก", value: credObj.room || "A-502", disclosed: false },
+            { name: "ชั้นพักอาศัย", value: "ชั้น " + (credObj.floor || "5"), disclosed: false },
+            { name: "ที่ตั้งหอพัก", value: "123/45 อาคาร A ถนนพญาไท แขวงวังใหม่ เขตปทุมวัน กรุงเทพมหานคร 10330", disclosed: false }
+          ]
+        });
+      } else {
+        mockQRData = JSON.stringify({
+          verifier: "ผู้ให้เช่าหอพัก ABC",
+          credentials: ["ชื่อ-นามสกุล", "เลขบัตรประชาชน", "สถานะการเป็นนักศึกษา"],
+          purpose: "ยืนยันตัวตนเพื่อเช่าหอพัก"
+        });
+      }
       onScan(mockQRData);
     }, 800);
   };

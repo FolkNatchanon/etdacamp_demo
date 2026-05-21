@@ -3,10 +3,8 @@
 import { useState, useEffect } from 'react';
 import { 
   Sparkles, 
-  ArrowRight, 
   ShieldCheck, 
   RotateCcw, 
-  ChevronRight, 
   CheckCircle2, 
   X,
 } from 'lucide-react';
@@ -23,241 +21,202 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
   const [isStudentIdSaved, setIsStudentIdSaved] = useState(false);
   const [isContractSigned, setIsContractSigned] = useState(false);
   const [isDormCredReceived, setIsDormCredReceived] = useState(false);
+  const [isConsentSent, setIsConsentSent] = useState(false);
+  const [isParkingCompleted, setIsParkingCompleted] = useState(false);
 
-  // Sync state with localStorage every second
+  // Sync state with localStorage every 800ms
   useEffect(() => {
     const checkState = () => {
       setIsThaiIdRegistered(!!localStorage.getItem('trustwallet_registered'));
       setIsStudentIdSaved(localStorage.getItem('trustwallet_student_id') === 'saved');
       setIsContractSigned(!!localStorage.getItem('trustwallet_contract_signed'));
       setIsDormCredReceived(!!localStorage.getItem('trustwallet_dorm_credential'));
+      setIsConsentSent(!!localStorage.getItem('trustwallet_p1_disclosed_fields'));
+      setIsParkingCompleted(localStorage.getItem('trustwallet_parking_completed') === 'true');
     };
     checkState();
     const interval = setInterval(checkState, 800);
     return () => clearInterval(interval);
   }, []);
 
+  const isAllCompleted = isDormCredReceived && isParkingCompleted && currentScreen === '01' && shellTab === 'dorm';
+
   const steps = [
     {
       num: 1,
       title: 'เลือกบทบาทผู้ใช้งาน',
-      subtitle: 'Select Role Portal',
-      desc: 'กดเลือกปุ่ม "นักศึกษา / ผู้เช่า" เพื่อเข้าสู่ Student Trust Wallet',
       trustTech: 'Sandboxed Role Separation: ระบบแยกสิทธิ์การเข้าถึงตามบทบาทผู้ใช้งาน',
-      actionText: 'เริ่มที่นี่ — เลือกบทบาท',
       isActive: currentScreen === '00',
       isCompleted: currentScreen !== '00',
-      warp: () => {
-        localStorage.removeItem('trustwallet_registered');
-        localStorage.removeItem('trustwallet_pin');
-        localStorage.removeItem('trustwallet_contract_signed');
-        localStorage.removeItem('trustwallet_p1_disclosed_fields');
-        localStorage.removeItem('trustwallet_student_id');
-        setIsThaiIdRegistered(false);
-        setIsStudentIdSaved(false);
-        setIsContractSigned(false);
-        onNavigate('00');
-      }
     },
     {
       num: 2,
       title: 'ยืนยัน Wallet ด้วยบัตรประชาชนดิจิทัล (DOPA VC)',
-      subtitle: 'Issuer → Holder (DOPA)',
-      desc: 'อยู่ที่แท็บ Documents กดปุ่ม "อนุญาต" แล้วรอ QR สแกนอัตโนมัติ จากนั้นตั้งรหัสอัตโนมัติ 123456',
       trustTech: 'Verifiable Credential Issuance: DOPA ลงลายมือชื่อดิจิทัลด้วย DID ส่ง VC ตรงสู่ Wallet ผู้ใช้',
-      actionText: 'รับ VC บัตรประชาชน (DOPA)',
-      isActive: currentScreen === '01' && shellTab === 'docs' && !isThaiIdRegistered,
+      isActive: !isThaiIdRegistered && ['01'].includes(currentScreen),
       isCompleted: isThaiIdRegistered,
-      warp: () => {
-        localStorage.removeItem('trustwallet_registered');
-        localStorage.removeItem('trustwallet_pin');
-        localStorage.removeItem('trustwallet_contract_signed');
-        localStorage.removeItem('trustwallet_p1_disclosed_fields');
-        localStorage.removeItem('trustwallet_student_id');
-        setIsThaiIdRegistered(false);
-        setIsStudentIdSaved(false);
-        setIsContractSigned(false);
-        onNavigate('01', 'docs');
-      }
     },
     {
       num: 3,
       title: 'รับบัตรนักศึกษาดิจิทัล (Student ID VC)',
-      subtitle: 'Issuer → Holder (University)',
-      desc: 'กดปุ่ม "ขอบัตรนักศึกษาดิจิทัล" รอระบบประมวลผล แล้วกด "บันทึกลง Trust Wallet"',
       trustTech: 'Multi-Issuer Wallet: มหาวิทยาลัยเป็น Issuer ออก Student VC ตรวจสอบสถานะจากทะเบียนนักศึกษา',
-      actionText: 'รับ VC บัตรนักศึกษา',
-      isActive: currentScreen === '01' && shellTab === 'docs' && isThaiIdRegistered && !isStudentIdSaved,
+      isActive: isThaiIdRegistered && !isStudentIdSaved && ['01'].includes(currentScreen),
       isCompleted: isStudentIdSaved,
-      warp: () => {
-        localStorage.setItem('trustwallet_registered', '1');
-        localStorage.setItem('trustwallet_pin', '123456');
-        localStorage.removeItem('trustwallet_student_id');
-        setIsThaiIdRegistered(true);
-        setIsStudentIdSaved(false);
-        onNavigate('01', 'docs');
-      }
     },
     {
       num: 4,
       title: 'เลือกหอพักและตรวจสอบผู้ให้เช่า (P5)',
-      subtitle: 'Holder → Verifier / Mutual Trust',
-      desc: 'ไปแท็บ Home กด "Happy Campus Dorm" → "ขอเช่าห้อง" → ยืนยันเพศ → "ส่งคำขอเช่า"',
       trustTech: 'ETDA P5 Standard: ตรวจสอบใบอนุญาตหอพัก ยืนยัน Proof of Possession แบบเรียลไทม์',
-      actionText: 'เลือกหอพัก & ส่งคำขอเช่า',
-      isActive: (currentScreen === '01' && shellTab === 'home') || currentScreen === 'dorm-detail' || ['03','04'].includes(currentScreen),
+      isActive: isStudentIdSaved && !isContractSigned && ['01', 'dorm-detail', '03', '04'].includes(currentScreen) && !['05', 'landlord', '07', '09'].includes(currentScreen),
       isCompleted: ['05', '06', 'landlord', '07', '09'].includes(currentScreen) || isContractSigned,
-      warp: () => {
-        localStorage.setItem('trustwallet_registered', '1');
-        localStorage.setItem('trustwallet_pin', '123456');
-        localStorage.setItem('trustwallet_student_id', 'saved');
-        setIsThaiIdRegistered(true);
-        setIsStudentIdSaved(true);
-        onNavigate('01', 'home');
-      }
     },
     {
       num: 5,
       title: 'ให้ความยินยอมแชร์ข้อมูล (Consent & VP)',
-      subtitle: 'Selective Disclosure (Consent)',
-      desc: 'ตรวจสอบข้อมูลที่จะแชร์ให้หอพัก กด "ยินยอมและส่งข้อมูล" — ข้อมูลที่ไม่เกี่ยวข้องจะไม่ถูกส่ง',
       trustTech: 'Verifiable Presentation (VP) & PDPA: Selective Disclosure ผู้ใช้ควบคุมข้อมูลที่เปิดเผย',
-      actionText: 'ตรวจสอบ & ยินยอมแชร์ VP',
-      isActive: currentScreen === '05',
+      isActive: currentScreen === '05' && !isConsentSent,
       isCompleted: ['06', 'landlord', '07', '09'].includes(currentScreen) || isContractSigned,
-      warp: () => {
-        localStorage.setItem('trustwallet_registered', '1');
-        localStorage.setItem('trustwallet_pin', '123456');
-        localStorage.setItem('trustwallet_student_id', 'saved');
-        setIsThaiIdRegistered(true);
-        setIsStudentIdSaved(true);
-        onNavigate('05');
-      }
     },
     {
       num: 6,
       title: 'ผู้ให้เช่าตรวจสอบและอนุมัติ',
-      subtitle: 'Verifier Verification Console',
-      desc: 'สลับมาฝั่งเจ้าของหอ กดดูข้อมูล "สมชาย ใจดี" แล้วกด "Approve Tenant" เพื่อลงนามฝั่งเจ้าของหอ',
       trustTech: 'Real-time VP Verification: ฝั่ง Verifier ตรวจลายเซ็น VC ว่าออกโดยสถาบันจริงและไม่ถูกเพิกถอน',
-      actionText: 'สลับไปแดชบอร์ดเจ้าของหอ',
-      isActive: ['landlord', '07'].includes(currentScreen),
+      isActive: ['landlord', '07'].includes(currentScreen) || (currentScreen === '05' && isConsentSent),
       isCompleted: currentScreen === '09' || isContractSigned,
-      warp: () => {
-        localStorage.setItem('trustwallet_registered', '1');
-        localStorage.setItem('trustwallet_pin', '123456');
-        localStorage.setItem('trustwallet_student_id', 'saved');
-        localStorage.setItem('trustwallet_p1_disclosed_fields', JSON.stringify(['name', 'status', 'university', 'faculty', 'year']));
-        // Seed landlord credentials so Approve Tenant is unlocked
-        localStorage.setItem('landlord_thai_id_pin', '123456');
-        const landlordCred = [{
-          id: `district_license-demo`,
-          type: 'district',
-          issuer: 'Pathumwan District Office',
-          issuerTh: 'สำนักงานเขตปทุมวัน',
-          name: 'Dormitory Business Agreement',
-          nameTh: 'ใบอนุญาตประกอบกิจการหอพัก',
-          status: 'active',
-          issuedAt: new Date().toISOString(),
-        }];
-        localStorage.setItem('landlord_wallet_credentials', JSON.stringify(landlordCred));
-        setIsThaiIdRegistered(true);
-        setIsStudentIdSaved(true);
-        onNavigate('landlord');
-      }
     },
     {
       num: 7,
       title: 'ลงนามสัญญาดิจิทัลร่วมกัน (e-Contract)',
-      subtitle: 'Dual Cryptographic Signing (QES)',
-      desc: 'ขั้นตอนสุดท้าย: เลื่อนลงล่างสุด กดปุ่ม "ลงนามด้วย Face ID" เพื่อลงนามฝั่งผู้เช่า',
       trustTech: 'Dual Signature & Non-repudiation: อ้างอิง พ.ร.บ. ธุรกรรมฯ ม.26 และ ม.28 ผูกพันทางกฎหมาย 100%',
-      actionText: 'ลงนามสัญญาเช่า Face ID',
-      isActive: currentScreen === '09',
+      isActive: currentScreen === '09' && !isContractSigned,
       isCompleted: isContractSigned && isDormCredReceived,
-      warp: () => {
-        localStorage.setItem('trustwallet_registered', '1');
-        localStorage.setItem('trustwallet_pin', '123456');
-        localStorage.setItem('trustwallet_student_id', 'saved');
-        localStorage.setItem('trustwallet_p1_disclosed_fields', JSON.stringify(['name', 'status', 'university', 'faculty', 'year']));
-        // Seed landlord credentials
-        localStorage.setItem('landlord_thai_id_pin', '123456');
-        const landlordCred = [{
-          id: `district_license-demo`,
-          type: 'district',
-          issuer: 'Pathumwan District Office',
-          issuerTh: 'สำนักงานเขตปทุมวัน',
-          name: 'Dormitory Business Agreement',
-          nameTh: 'ใบอนุญาตประกอบกิจการหอพัก',
-          status: 'active',
-          issuedAt: new Date().toISOString(),
-        }];
-        if (!localStorage.getItem('landlord_wallet_credentials')) {
-          localStorage.setItem('landlord_wallet_credentials', JSON.stringify(landlordCred));
-        }
-        setIsThaiIdRegistered(true);
-        setIsStudentIdSaved(true);
-        onNavigate('09');
-      }
     },
     {
       num: 8,
       title: 'รับ Dorm Access Credential จากเจ้าของหอ',
-      subtitle: 'Issuer → Holder (Landlord)',
-      desc: 'หลังลงนาม modal จะแสดงเอง — กด “รับ Credential ลง Trust Wallet” เพื่อเก็บบัตรสิทธิ์หอพัก แล้วระบบจะพามาหน้า Documents ทันที',
       trustTech: 'Post-Contract VC Issuance: เจ้าของหอออก VC สิทธิ์ใช้งานหอพักโดยตรง ผูกพันกับสัญญาเช่าที่ลงนามแล้ว',
-      actionText: 'รับ Dorm Access Card VC',
       isActive: currentScreen === '09' && isContractSigned && !isDormCredReceived,
       isCompleted: isDormCredReceived,
-      warp: () => {
-        localStorage.setItem('trustwallet_registered', '1');
-        localStorage.setItem('trustwallet_pin', '123456');
-        localStorage.setItem('trustwallet_student_id', 'saved');
-        localStorage.setItem('trustwallet_contract_signed', 'true');
-        localStorage.setItem('trustwallet_p1_disclosed_fields', JSON.stringify(['name', 'status', 'university', 'faculty', 'year']));
-        localStorage.setItem('landlord_thai_id_pin', '123456');
-        setIsThaiIdRegistered(true);
-        setIsStudentIdSaved(true);
-        setIsContractSigned(true);
-        onNavigate('09');
-      }
     },
     {
       num: 9,
       title: 'ทดลองใช้ที่จอดรถอัจฉริยะ (Verified Parking)',
-      subtitle: 'Credential-Based Access Control',
-      desc: 'สแกน QR ที่ตู้จอดรถ ระบบจะตรวจสอบ Credential อัตโนมัติว่าสิทธิ์จอดรถอาคาร A หรือไม่ — โดยไม่ต้องสมัครหรือแสดงบัตรให้เจ้าหน้าที่เลย',
       trustTech: 'VC-Based Access Control: Zero-Knowledge เปิดแค่สิทธิ์ประตูบานตาม Credential โดยไม่เปิดเผยข้อมูลส่วนตัว',
-      actionText: 'ทดลอง Parking QR Scan',
-      isActive: currentScreen === 'parking',
-      isCompleted: false,
-      warp: () => {
-        const dormCred = {
-          id: 'dorm-access-demo',
-          type: 'DormAccessCard',
-          dormName: 'Happy Campus Dorm',
-          building: 'A',
-          room: 'A-502',
-          floor: '5',
-          issuer: 'นายสมศักดิ์ รักสงบ',
-          issuedAt: new Date().toISOString(),
-          permissions: ['parking_building_A', 'wifi_access'],
-        };
-        localStorage.setItem('trustwallet_registered', '1');
-        localStorage.setItem('trustwallet_student_id', 'saved');
-        localStorage.setItem('trustwallet_contract_signed', 'true');
-        localStorage.setItem('trustwallet_dorm_credential', JSON.stringify(dormCred));
-        setIsThaiIdRegistered(true);
-        setIsStudentIdSaved(true);
-        setIsContractSigned(true);
-        setIsDormCredReceived(true);
-        onNavigate('parking');
-      }
+      isActive: currentScreen === 'parking' || (isDormCredReceived && currentScreen === '01' && !isParkingCompleted),
+      isCompleted: isParkingCompleted,
     }
   ];
 
-  const currentStep = steps.find(s => s.isActive) || steps[0];
+  const currentStep = isAllCompleted 
+    ? {
+        num: 9,
+        title: 'การทดสอบเสร็จสมบูรณ์! ✓',
+        trustTech: 'End-to-End Digital Trust: เชื่อมโยงระบบตั้งแต่การพิสูจน์ตัวตน, ออก VC, ลงนาม e-Contract, นำ VP ไปจอดรถ และจ่ายบิลค่าเช่า',
+        isActive: false,
+        isCompleted: true,
+      }
+    : (steps.find(s => s.isActive) || steps[0]);
   const totalSteps = steps.length;
+
+  // Dynamic instruction text generator for desktop/timeline view
+  const getStepDesc = (stepNum: number) => {
+    switch (stepNum) {
+      case 1:
+        return 'กดเลือกปุ่ม "นักศึกษา / ผู้เช่า" บนหน้าหลักเพื่อเริ่มต้นเข้าสู่กระบวนการเปิดกระเป๋าเงินดิจิทัล';
+      case 2:
+        return 'หน้าแอปพลิเคชันจะเปิดระบบจำลองการขอข้อมูลบัตรประชาชนดิจิทัล (DOPA VC) ให้กดปุ่ม "อนุญาต" เพื่อสแกน QR Code และทำการ "ตั้งรหัสผ่านอัตโนมัติ" (123456) ให้เสร็จสิ้น';
+      case 3:
+        return 'หลังจากเชื่อมต่อบัตรประชาชนสำเร็จ ให้กดปุ่ม "ขอบัตรนักศึกษาดิจิทัล" รอระบบประมวลผลการตรวจสอบสิทธิ์ จากนั้นกดปุ่ม "บันทึกลง Trust Wallet"';
+      case 4:
+        if (currentScreen === '01' && shellTab === 'docs') {
+          return 'ข้อมูลบัตรของคุณครบถ้วนแล้ว! ให้กดสลับไปที่แท็บ "Home" (หน้าแรก) ด้านล่างสุด เพื่อเข้าสู่ระบบเลือกหอพัก';
+        }
+        if (currentScreen === '01' && shellTab === 'home') {
+          return 'ที่หน้า Home ให้เลือกหอพัก "Happy Campus Dorm" (ปุ่มจะเรืองแสงสีม่วง)';
+        }
+        if (currentScreen === 'dorm-detail') {
+          return 'ที่หน้าข้อมูลหอพัก ให้เลือกห้อง (เช่น A-502) แล้วกดปุ่ม "ขอเช่าห้องพัก" -> ทำการติ๊กยอมรับข้อตกลง -> กด "ส่งคำขอเช่า"';
+        }
+        return 'กดสลับไปที่แท็บ Home จากนั้นเลือกหอพัก "Happy Campus Dorm" เพื่อส่งคำขอขอเช่าห้องพัก';
+      case 5:
+        return 'ระบบจำลองหน้าต่างขอความยินยอมเปิดเผยข้อมูล (Consent Screen) ให้กดปุ่ม "ยินยอมและส่งข้อมูล (VP)" เพื่อเปิดเผยข้อมูลสิทธิ์นักศึกษาตามมาตรฐานความปลอดภัยข้อมูลส่วนบุคคล';
+      case 6:
+        if (currentScreen === '05') {
+          return 'คุณได้ส่งมอบสิทธิ์ข้อมูลเรียบร้อยแล้ว! ให้กดปุ่มสีฟ้า "สลับเป็นเจ้าของหอพักเพื่อตรวจรับคำขอ" ในป๊อปอัปแจ้งเตือนเพื่อไปยังแดชบอร์ดฝั่งเจ้าของหอ';
+        }
+        return 'เมื่อเข้าสู่ระบบของเจ้าของหอพัก ให้กดเลือกคำขอของ "สมชาย ใจดี" ในแท็บ Pending เพื่อตรวจสอบข้อมูลนักศึกษา จากนั้นกด "Approve Tenant" (เพื่อลงชื่อฝั่งเจ้าของหอ)';
+      case 7:
+        if (currentScreen === 'landlord' || currentScreen === '07') {
+          return 'ผู้ให้เช่าได้เซ็นสัญญาฝั่งตนเองเสร็จสิ้นแล้ว! ให้กดปุ่มสีม่วง "สลับบทบาทเป็นผู้เช่าเพื่อลงนามร่วมกัน" เพื่อกลับมาหน้าสัญญาเช่าฝั่งนิสิต';
+        }
+        return 'เมื่อกลับมาที่สัญญาเช่าฝั่งผู้เช่า ให้เลื่อนหน้าจอลงไปล่างสุด แล้วกดปุ่ม "ลงนามด้วย Face ID" เพื่อทำสัญญาอิเล็กทรอนิกส์ร่วมกันสมบูรณ์';
+      case 8:
+        return 'หลังการยืนยันตัวตนสำเร็จ จะมีหน้าต่างเด้งแสดงบัตรเข้าหอพัก ให้กดปุ่มสีม่วง "รับ Credential ลง Trust Wallet" เพื่อบันทึกสิทธิ์บัตรเข้าใช้งานหอพักของคุณลงเครื่อง';
+      case 9:
+        if (isAllCompleted) {
+          return 'ยินดีด้วย! คุณได้ทดสอบระบบเสร็จสิ้นแล้ว ตั้งแต่เปิดกระเป๋าเงินดิจิทัล, รับบัตรนักศึกษา VC, ทำสัญญาเช่า e-Contract, รับบัตรสิทธิ์พักอาศัย VC, ใช้ VP เพื่อเข้าจอดรถ และสุดท้ายเข้าสู่หน้า "My Dorm" เพื่อตรวจดูบิลเรียกเก็บค่าบริการ/ค่าเช่ารายเดือนที่เชื่อมโยงกับสิทธิ์ห้องพักของคุณตามมาตรฐาน ETDA Digital Trust';
+        }
+        if (currentScreen === '01' && shellTab === 'docs') {
+          return 'ระบบนำคุณกลับมาที่หน้าเอกสารแล้ว! ให้กดคลิกเปิดบัตร "Dorm Access Card" เพื่อตรวจสอบรายละเอียดสิทธิ์ จากนั้นกดปุ่ม "สแกน QR Code" (ปุ่มสีม่วงตรงกลางแถบด้านล่างสุด) เพื่อแชร์ข้อมูลสิทธิ์จอดรถของคุณ';
+        }
+        if (currentScreen === '01') {
+          return 'ให้กดสลับไปที่แท็บ "Documents" (เอกสาร) เพื่อตรวจสอบบัตรสิทธิ์เข้าหอพักก่อน จากนั้นจึงสแกนเพื่อใช้บริการที่จอดรถ';
+        }
+        return 'ที่ระบบควบคุมที่จอดรถอัจฉริยะ คุณได้จำลองการส่งมอบข้อมูลสิทธิ์เข้าที่จอดรถโดยปกปิดข้อมูลส่วนตัวอื่นๆ แล้ว (สแกน/ตรวจสอบ/อนุญาตเข้าจอดสำเร็จ!)';
+      default:
+        return '';
+    }
+  };
+
+  // Dynamic instruction text generator for mobile banner
+  const getMobileStepDesc = (stepNum: number) => {
+    switch (stepNum) {
+      case 1:
+        return "👉 เลือกบทบาท 'นักศึกษา / ผู้เช่า'";
+      case 2:
+        return "👉 กด 'อนุญาต' รอสแกน → ตั้งรหัสผ่าน (123456)";
+      case 3:
+        return "👉 กด 'ขอบัตรนักศึกษาดิจิทัล' → 'บันทึกลง Wallet'";
+      case 4:
+        if (currentScreen === '01' && shellTab === 'docs') {
+          return "👉 กดสลับไปที่แท็บ Home (หน้าแรก) ด้านล่างสุด";
+        }
+        if (currentScreen === '01' && shellTab === 'home') {
+          return "👉 กดเลือกหอพัก 'Happy Campus Dorm'";
+        }
+        if (currentScreen === 'dorm-detail') {
+          return "👉 เลือกห้อง → ติ๊กยอมรับ → กด 'ส่งคำขอเช่า'";
+        }
+        return "👉 ไปหน้า Home → Happy Campus → ขอเช่าห้อง";
+      case 5:
+        return "👉 ตรวจสอบข้อมูล → กด 'ยินยอมและส่งข้อมูล (VP)'";
+      case 6:
+        if (currentScreen === '05') {
+          return "👉 กดปุ่ม 'สลับเป็นเจ้าของหอพัก...' ในป๊อปอัป";
+        }
+        return "👉 กดดูคำขอของ 'สมชาย ใจดี' → กด Approve Tenant";
+      case 7:
+        if (currentScreen === 'landlord' || currentScreen === '07') {
+          return "👉 กดปุ่ม 'สลับบทบาทเป็นผู้เช่า...' ในป๊อปอัป";
+        }
+        return "👉 สลับกลับมาฝั่งผู้เช่า เลื่อนล่างสุด → ลงนาม Face ID";
+      case 8:
+        return "👉 กด 'รับ Credential ลง Trust Wallet' ในป๊อปอัป";
+      case 9:
+        if (isAllCompleted) {
+          return '🎉 การทดสอบเสร็จสมบูรณ์เรียบร้อยแล้ว!';
+        }
+        if (currentScreen === '01' && shellTab === 'docs') {
+          return "👉 คลิกเปิดดูรายละเอียดบัตร → สแกน QR ปุ่มล่างสุดเพื่อจอดรถ";
+        }
+        if (currentScreen === '01') {
+          return "👉 กดสลับไปแท็บ Documents เพื่อตรวจสอบบัตรสิทธิ์";
+        }
+        return "👉 จำลองการแสดงสิทธิ์เพื่อเข้าจอดและอนุมัติสำเร็จ! ✓";
+      default:
+        return "";
+    }
+  };
 
   const handleReset = () => {
     localStorage.removeItem('trustwallet_registered');
@@ -266,49 +225,38 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
     localStorage.removeItem('trustwallet_p1_disclosed_fields');
     localStorage.removeItem('trustwallet_student_id');
     localStorage.removeItem('trustwallet_dorm_credential');
+    localStorage.removeItem('trustwallet_parking_completed');
     setIsThaiIdRegistered(false);
     setIsStudentIdSaved(false);
     setIsContractSigned(false);
     setIsDormCredReceived(false);
+    setIsConsentSent(false);
+    setIsParkingCompleted(false);
     onNavigate('00');
   };
 
   return (
     <>
       {/* Mobile Sticky Top Guide Banner */}
-      <div className="flex md:hidden fixed top-0 left-0 right-0 h-[50px] bg-slate-950/95 border-b border-slate-800/80 z-[100] px-3 items-center justify-between backdrop-blur-md text-white select-none">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="shrink-0 bg-indigo-600 text-[10px] font-bold px-1.5 py-0.5 rounded font-mono">
+      <div className="flex md:hidden fixed top-0 left-0 right-0 h-[52px] bg-slate-950/95 border-b border-slate-800/80 z-[100] px-4 items-center justify-between backdrop-blur-md text-white select-none">
+        <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+          <div className="shrink-0 bg-indigo-600/90 text-[10px] font-bold px-2 py-0.5 rounded font-mono">
             {currentStep.num}/{totalSteps}
           </div>
-          <div className="text-[11px] font-bold truncate text-slate-200">
-            {currentStep.num === 1 && "👉 กดเลือกบทบาท 'นักศึกษา / ผู้เช่า'"}
-            {currentStep.num === 2 && "👉 กด 'อนุญาต' รอ QR สแกน → ตั้งรหัสอัตโนมัติ"}
-            {currentStep.num === 3 && "👉 กด 'ขอบัตรนักศึกษาดิจิทัล' → บันทึกลง Wallet"}
-            {currentStep.num === 4 && "👉 ไปหน้าแรก → กด Happy Campus → ขอเช่าห้อง"}
-            {currentStep.num === 5 && "👉 ตรวจสอบ P5 → กด 'ยินยอมแชร์ข้อมูล'"}
-            {currentStep.num === 6 && "👉 กดดู 'สมชาย ใจดี' → Approve Tenant"}
-            {currentStep.num === 7 && "👉 เลื่อนลงล่าง → ลงนามด้วย Face ID"}
-            {currentStep.num === 8 && "👉 กด 'รับ Credential ลง Trust Wallet'"}
-            {currentStep.num === 9 && "👉 กดสแกน QR → ดูผลอนุญาตจอดรถ"}
+          <div className="text-[11.5px] font-medium truncate text-slate-200">
+            {getMobileStepDesc(currentStep.num)}
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => currentStep.warp()}
-            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-[10px] font-black rounded-lg transition-all border border-indigo-500 animate-pulse-glow"
-          >
-            Warp
-          </button>
+        <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={handleReset}
             title="รีเซ็ต Demo"
-            className="w-7 h-7 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center rounded-lg active:scale-90 transition-all"
+            className="h-8 px-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1.5 rounded-lg active:scale-95 transition-all text-xs font-semibold"
           >
-            <RotateCcw size={11} />
+            <RotateCcw size={12} />
+            <span>รีเซ็ต</span>
           </button>
         </div>
       </div>
@@ -323,11 +271,11 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
             <div className="shrink-0 px-5 py-4 bg-gradient-to-r from-slate-900 to-indigo-950 border-b border-slate-800/80 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 bg-indigo-500/10 border border-indigo-500/20 rounded-lg flex items-center justify-center">
-                  <Sparkles size={14} className="text-indigo-400" />
+                  <Sparkles size={14} className="text-indigo-400 animate-pulse" />
                 </div>
                 <div>
                   <h3 className="text-xs font-bold font-mono tracking-wider text-slate-300">DEMO INSTRUCTION GUIDE</h3>
-                  <p className="text-[10px] text-indigo-400 font-bold">คู่มือกรรมการทดลองใช้งานระบบ</p>
+                  <p className="text-[10px] text-indigo-400 font-bold">คู่มือแสดงสถานะขั้นตอนการทดสอบ</p>
                 </div>
               </div>
               
@@ -336,9 +284,10 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
                   type="button"
                   onClick={handleReset}
                   title="เริ่ม Demo ใหม่ทั้งหมด (Reset)"
-                  className="w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center active:scale-90 transition-all border border-slate-800"
+                  className="px-2.5 py-1 text-[11px] font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg flex items-center gap-1 active:scale-90 transition-all border border-slate-800"
                 >
-                  <RotateCcw size={12} />
+                  <RotateCcw size={11} />
+                  <span>รีเซ็ต Demo</span>
                 </button>
                 <button 
                   type="button"
@@ -350,31 +299,31 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
               </div>
             </div>
 
-            {/* Body Content - Current Step Overview */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 max-h-[420px]">
+            {/* Body Content */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 max-h-[460px] scrollbar-thin">
               {/* Active Step Highlight Box */}
-              <div className="bg-indigo-950/40 border border-indigo-500/20 rounded-2xl p-4 space-y-2 relative overflow-hidden">
+              <div className="bg-gradient-to-br from-indigo-950/50 to-slate-900/50 border border-indigo-500/30 rounded-2xl p-4 space-y-2 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl pointer-events-none" />
                 
                 <div className="flex items-center justify-between">
-                  <span className="bg-indigo-500 text-white font-mono text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    Step {currentStep.num} / {totalSteps}
+                  <span className="bg-indigo-600 text-white font-mono text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    กำลังดำเนินการ: Step {currentStep.num} / {totalSteps}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-bold font-mono uppercase tracking-wide">
-                    {currentStep.subtitle}
+                  <span className="text-[10px] text-slate-500 font-bold font-mono">
+                    Active State
                   </span>
                 </div>
 
-                <h4 className="text-sm font-black text-white flex items-center gap-1.5 mt-1">
+                <h4 className="text-sm font-bold text-white mt-1">
                   {currentStep.title}
                 </h4>
                 
-                <p className="text-[11.5px] text-slate-300 leading-relaxed font-medium">
-                  {currentStep.desc}
+                <p className="text-[12px] text-indigo-200 leading-relaxed font-normal bg-indigo-950/30 border border-indigo-500/10 p-2.5 rounded-xl">
+                  {getStepDesc(currentStep.num)}
                 </p>
 
                 {/* Digital Trust Spotlight */}
-                <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-2.5 mt-3 space-y-1">
+                <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-2.5 mt-2 space-y-1">
                   <p className="text-[8.5px] text-indigo-400 font-extrabold tracking-wider uppercase flex items-center gap-1">
                     <ShieldCheck size={11} className="text-indigo-400" />
                     กลไกความเชื่อมั่นดิจิทัล (Digital Trust System)
@@ -385,50 +334,54 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
                 </div>
               </div>
 
-              {/* Checklist of all steps */}
-              <div className="space-y-1.5">
-                <p className="text-[9px] text-slate-500 font-bold font-mono tracking-wider uppercase px-1">Demo Milestones</p>
-                <div className="space-y-1">
+              {/* Checklist Timeline */}
+              <div className="space-y-2">
+                <p className="text-[9px] text-slate-500 font-bold font-mono tracking-wider uppercase px-1">
+                  ลำดับการทดสอบ (Demo Steps Timeline)
+                </p>
+                <div className="relative pl-4 space-y-3 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-800">
                   {steps.map((s) => {
+                    const isStepActive = s.isActive;
+                    const isStepCompleted = s.isCompleted;
+
                     return (
                       <div 
                         key={s.num} 
-                        onClick={s.warp}
-                        className={`group w-full flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
-                          s.isActive
-                            ? 'bg-indigo-500/10 border-indigo-500/40 text-white font-bold'
-                            : s.isCompleted
-                            ? 'bg-emerald-950/10 border-emerald-500/20 text-slate-400'
-                            : 'bg-slate-900/20 border-slate-900 text-slate-500 hover:border-slate-800'
-                        }`}
+                        className={`relative flex items-start gap-3 transition-colors duration-200`}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          {/* Step circle marker */}
-                          {s.isCompleted ? (
-                            <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                        {/* Bullet Marker */}
+                        <div className="absolute -left-[13px] mt-1 z-10 flex items-center justify-center">
+                          {isStepCompleted ? (
+                            <CheckCircle2 size={13} className="text-emerald-500 bg-slate-950 rounded-full" />
+                          ) : isStepActive ? (
+                            <span className="relative flex h-3.5 w-3.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-indigo-500 border border-indigo-400"></span>
+                            </span>
                           ) : (
-                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 ${
-                              s.isActive
-                                ? 'bg-indigo-500 text-white'
-                                : 'bg-slate-800 text-slate-500 group-hover:bg-slate-700'
-                            }`}>
-                              {s.num}
-                            </div>
+                            <div className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700" />
                           )}
-                          <span className="text-[11px] truncate">{s.title}</span>
                         </div>
-                        
-                        {/* Action trigger button */}
-                        <button 
-                          type="button"
-                          className={`opacity-0 group-hover:opacity-100 flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-bold border transition-all ${
-                            s.isActive
-                              ? 'bg-indigo-600 border-indigo-500 text-white'
-                              : 'bg-slate-800 border-slate-700 text-indigo-400 group-hover:text-indigo-300'
-                          }`}
-                        >
-                          Warp <ChevronRight size={10} />
-                        </button>
+
+                        {/* Content */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-[10.5px] font-mono ${
+                              isStepActive ? 'text-indigo-400 font-bold' : 'text-slate-500'
+                            }`}>
+                              {s.num}.
+                            </span>
+                            <span className={`text-[11.5px] ${
+                              isStepActive 
+                                ? 'text-white font-bold' 
+                                : isStepCompleted 
+                                ? 'text-slate-400' 
+                                : 'text-slate-600'
+                            }`}>
+                              {s.title}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -438,20 +391,11 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
             </div>
 
             {/* Footer controls */}
-            <div className="shrink-0 bg-slate-900/60 border-t border-slate-800/80 px-5 py-4 flex items-center justify-between gap-3">
-              <button 
-                type="button"
-                onClick={handleReset}
-                className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white font-bold transition-colors animate-pulse"
-              >
-                <RotateCcw size={11} />
-                รีเซ็ต Demo
-              </button>
-
-              {/* Quick warp shortcut indicator */}
-              <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1 select-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Interactive Demo Sandbox
+            <div className="shrink-0 bg-slate-900/60 border-t border-slate-800/80 px-5 py-3 flex items-center justify-between gap-3 text-[10px] text-slate-500 select-none">
+              <span>คู่มืออ่านค่าอัตโนมัติ (Read-Only)</span>
+              <div className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                Active Tracker
               </div>
             </div>
 
@@ -466,9 +410,8 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
           onClick={() => setIsOpen(true)}
           className="fixed top-8 right-8 z-[50] hidden md:flex items-center gap-2 px-3.5 py-2 bg-slate-950 border border-slate-800/80 rounded-2xl shadow-xl hover:shadow-indigo-500/10 text-slate-200 hover:text-white active:scale-95 transition-all"
         >
-          <Sparkles size={13} className="text-indigo-400" />
+          <Sparkles size={13} className="text-indigo-400 animate-pulse" />
           <span className="text-xs font-bold">เปิดคู่มือการเล่น (Demo Guide)</span>
-          <ChevronRight size={11} className="text-indigo-400" />
         </button>
       )}
     </>

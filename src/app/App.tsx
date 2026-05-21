@@ -42,6 +42,7 @@ export default function App() {
       'trustwallet_student_id',
       'trustwallet_show_documents',
       'trustwallet_dorm_credential',
+      'trustwallet_parking_completed',
       'landlord_thai_id_pin',
       'landlord_wallet_credentials',
       'selected_dorm_gender',
@@ -129,7 +130,7 @@ export default function App() {
   const renderLayout = () => {
     if (isPortal) {
       return (
-        <div className="w-full min-h-screen flex flex-col bg-[#0B0F19] text-slate-100 relative overflow-hidden select-none animate-fade-in">
+        <div className="w-full min-h-screen flex flex-col bg-[#0B0F19] text-slate-100 relative overflow-hidden select-none animate-fade-in pt-[52px] md:pt-0">
           {/* Decorative background gradients to keep Portal Landing premium */}
           <div className="absolute top-[10%] left-[10%] w-[350px] h-[350px] bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none" />
           <div className="absolute bottom-[10%] right-[10%] w-[350px] h-[350px] bg-purple-600/20 rounded-full blur-[100px] pointer-events-none" />
@@ -144,9 +145,9 @@ export default function App() {
     // 2. Mobile Wallet Screen Wrapper - A clean responsive card container on desktop, full-screen on mobile
     if (isMobileWallet) {
       return (
-        <div className="w-full h-[100dvh] md:min-h-screen flex items-center justify-center bg-[#F5F6FA] select-none relative">
+        <div className="w-full h-[100dvh] md:min-h-screen flex flex-col items-center justify-center bg-[#F5F6FA] select-none relative pt-[52px] md:pt-0">
           {/* Clean responsive container - Card layout on desktop, full screen on mobile */}
-          <div className="w-full h-full md:h-[800px] md:max-h-[90vh] md:max-w-md bg-white md:rounded-[24px] md:shadow-[0_10px_40px_rgba(0,0,0,0.06)] md:border md:border-slate-200/80 overflow-hidden relative flex flex-col z-10 transition-all duration-350">
+          <div className="w-full flex-1 md:flex-initial md:h-[800px] md:max-h-[90vh] md:max-w-md bg-white md:rounded-[24px] md:shadow-[0_10px_40px_rgba(0,0,0,0.06)] md:border md:border-slate-200/80 overflow-hidden relative flex flex-col z-10 transition-all duration-350">
             <div className="flex-1 overflow-hidden relative bg-white flex flex-col">
               {renderScreen()}
             </div>
@@ -158,7 +159,7 @@ export default function App() {
     // 3. Desktop Console Dashboard Screen Wrapper - Full-screen dashboard app
     if (isDesktopConsole) {
       return (
-        <div className="w-full h-screen flex flex-col bg-[#F8F9FC] text-slate-950 overflow-hidden">
+        <div className="w-full h-screen flex flex-col bg-[#F8F9FC] text-slate-950 overflow-hidden pt-[52px] md:pt-0">
           {renderScreen()}
         </div>
       );
@@ -166,7 +167,7 @@ export default function App() {
 
     // Fallback
     return (
-      <div className="w-full min-h-screen flex flex-col bg-[#F8F9FC] text-slate-950">
+      <div className="w-full min-h-screen flex flex-col bg-[#F8F9FC] text-slate-950 pt-[52px] md:pt-0">
         {renderScreen()}
       </div>
     );
