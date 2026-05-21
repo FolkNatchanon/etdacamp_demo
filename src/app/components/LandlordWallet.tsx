@@ -1,0 +1,983 @@
+import { useState, useEffect } from 'react';
+import {
+  ArrowLeft, ShieldCheck, Loader2, CheckCircle2,
+  Lock, Building2, MapPin, X, Smartphone, Clock, CreditCard, Download,
+} from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+
+interface LandlordWalletProps {
+  onNavigate: (screen: string) => void;
+  credentialToReceive?: {
+    id: string;
+    type: 'district' | 'university';
+    issuer: string;
+    issuerTh: string;
+    name: string;
+    nameTh: string;
+    description: string;
+  } | null;
+  onCredentialSaved?: () => void;
+}
+
+type WalletStep = 'consent' | 'qr' | 'linking' | 'pin-setup' | 'pin-entry' | 'main' | 'receive-credential';
+
+const NUMPAD = ['1','2','3','4','5','6','7','8','9','','0','⌫'] as const;
+
+// ─── Consent Screen ───────────────────────────────────────────────────────────
+
+function ConsentScreen({ onAllow, onDeny }: { onAllow: () => void; onDeny: () => void }) {
+  return (
+    <div className="size-full flex flex-col bg-white">
+      <div className="shrink-0 px-4 pt-10 pb-4">
+        <div className="flex items-center gap-3">
+          <button onClick={onDeny} className="w-8 h-8 rounded-full bg-gray-100 active:bg-gray-200 flex items-center justify-center">
+            <ArrowLeft size={16} className="text-gray-700" />
+          </button>
+          <p className="text-gray-900" style={{ fontSize: '16px', fontWeight: 700 }}>เชื่อมต่อ Wallet</p>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+        <div className="flex flex-col items-center gap-4 py-8">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
+            <ShieldCheck size={40} className="text-white" />
+          </div>
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              Landlord Trust Wallet
+            </h2>
+            <p className="text-sm text-gray-600">
+              กระเป๋าดิจิทัลสำหรับเก็บ Credentials ของผู้ประกอบการหอพัก
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+          <p className="text-sm font-semibold text-blue-900 mb-3">
+            ประโยชน์ของ Landlord Wallet:
+          </p>
+          <ul className="space-y-2 text-sm text-blue-800">
+            <li className="flex items-start gap-2">
+              <CheckCircle2 size={16} className="text-blue-600 shrink-0 mt-0.5" />
+              <span>เก็บใบอนุญาตและใบรับรองจากหน่วยงานราชการ</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 size={16} className="text-blue-600 shrink-0 mt-0.5" />
+              <span>ยืนยันความถูกต้องของธุรกิจหอพัก</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 size={16} className="text-blue-600 shrink-0 mt-0.5" />
+              <span>รับการรับรองจากมหาวิทยาลัย</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 size={16} className="text-blue-600 shrink-0 mt-0.5" />
+              <span>แชร์ข้อมูลกับผู้เช่าอย่างปลอดภัย</span>
+            </li>
+          </ul>
+        </div>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+          <div className="flex items-start gap-2">
+            <Lock size={16} className="text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-900 mb-1">
+                ข้อมูลของคุณปลอดภัย
+              </p>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                Credentials จะถูกเข้ารหัสและเก็บบนอุปกรณ์ของคุณเท่านั้น คุณควบคุมการแชร์ข้อมูลได้เต็มที่
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="shrink-0 px-6 pb-6 pt-4 bg-white border-t border-gray-100">
+        <button
+          onClick={onAllow}
+          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
+        >
+          เชื่อมต่อ Wallet
+        </button>
+        <button
+          onClick={onDeny}
+          className="w-full text-gray-600 py-3 rounded-xl font-semibold text-sm mt-2"
+        >
+          ไว้ทีหลัง
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── QR Screen ────────────────────────────────────────────────────────────────
+
+function QRScreen({ onScanned, onBack }: { onScanned: () => void; onBack: () => void }) {
+  const [expired, setExpired] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(120);
+
+  useEffect(() => {
+    const t = setTimeout(() => setExpired(true), 120000);
+    const interval = setInterval(() => {
+      setTimeLeft(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => {
+      clearTimeout(t);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+
+  return (
+    <div className="size-full flex flex-col bg-[#F8F7FF]">
+      <div className="shrink-0 px-4 pt-10 pb-4 bg-white shadow-sm">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="w-8 h-8 rounded-full bg-gray-100 active:bg-gray-200 flex items-center justify-center">
+            <ArrowLeft size={16} className="text-gray-700" />
+          </button>
+          <div>
+            <p className="text-gray-900" style={{ fontSize: '16px', fontWeight: 700 }}>สแกน QR Code</p>
+            <p className="text-gray-500" style={{ fontSize: '11px' }}>เชื่อมต่อข้อมูลธุรกิจ</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6">
+        <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100">
+          <div className="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl p-4 mb-4">
+            <QRCodeSVG value="landlord-wallet-connect-123456" size={200} />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-gray-900 mb-1">สแกนด้วยแอพ Trust Wallet</p>
+            <div className="flex items-center justify-center gap-1.5">
+              <Clock size={14} className={timeLeft < 30 ? 'text-red-500' : 'text-gray-400'} />
+              <p className={`text-xs font-mono ${timeLeft < 30 ? 'text-red-600' : 'text-gray-500'}`}>
+                {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 max-w-sm">
+          <p className="text-xs text-blue-800 text-center">
+            💡 QR Code นี้ใช้เชื่อมต่อข้อมูลใบอนุญาตประกอบการจากฐานข้อมูลราชการ
+          </p>
+        </div>
+
+        <button
+          onClick={onScanned}
+          className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold active:bg-indigo-700"
+        >
+          🔄 จำลองการสแกน
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Linking Screen ───────────────────────────────────────────────────────────
+
+function LinkingScreen() {
+  const steps = [
+    'เชื่อมต่อระบบใบอนุญาตประกอบการ',
+    'ยืนยันข้อมูลธุรกิจหอพัก',
+    'เข้ารหัสและบันทึกลง Trust Wallet',
+  ];
+  const [done, setDone] = useState(0);
+
+  useEffect(() => {
+    const intervals = steps.map((_, i) =>
+      setTimeout(() => setDone(i + 1), 700 + i * 900)
+    );
+    return () => intervals.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <div className="size-full flex flex-col items-center justify-center bg-[#F8F7FF] gap-6 px-8">
+      <div className="w-20 h-20 rounded-full bg-indigo-50 border-4 border-indigo-100 flex items-center justify-center">
+        {done === steps.length
+          ? <CheckCircle2 size={36} className="text-emerald-500" />
+          : <Loader2 size={36} className="text-indigo-500 animate-spin" />
+        }
+      </div>
+      <div className="text-center">
+        <p className="text-gray-900" style={{ fontSize: '16px', fontWeight: 700 }}>
+          {done === steps.length ? 'เชื่อมต่อสำเร็จ!' : 'กำลังเชื่อมต่อ…'}
+        </p>
+        <p className="text-gray-500 mt-1" style={{ fontSize: '12px' }}>Business License Verification</p>
+      </div>
+      <div className="w-full bg-white rounded-2xl border border-gray-100 px-4 py-3 space-y-3">
+        {steps.map((label, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="w-5 h-5 shrink-0 flex items-center justify-center">
+              {i < done
+                ? <CheckCircle2 size={16} className="text-emerald-500" />
+                : i === done
+                ? <Loader2 size={14} className="text-indigo-400 animate-spin" />
+                : <div className="w-3 h-3 rounded-full border-2 border-gray-200" />
+              }
+            </div>
+            <p className={i < done ? 'text-gray-800' : 'text-gray-400'} style={{ fontSize: '12px', fontWeight: i < done ? 600 : 400 }}>
+              {label}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── PIN Setup ────────────────────────────────────────────────────────────────
+
+function PinSetupScreen({ onSuccess }: { onSuccess: () => void }) {
+  type Phase = 'create' | 'confirm' | 'success';
+  const [phase, setPhase] = useState<Phase>('create');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [shake, setShake] = useState(false);
+
+  useEffect(() => {
+    if (phase === 'success') {
+      setTimeout(onSuccess, 1500);
+    }
+  }, [phase, onSuccess]);
+
+  const handleKey = (key: string) => {
+    if (phase === 'success') return;
+
+    if (key === '⌫') {
+      if (phase === 'create') setPin(p => p.slice(0, -1));
+      else setConfirmPin(p => p.slice(0, -1));
+      return;
+    }
+
+    const current = phase === 'create' ? pin : confirmPin;
+    if (current.length >= 6) return;
+
+    const newValue = current + key;
+
+    if (phase === 'create') {
+      setPin(newValue);
+      if (newValue.length === 6) {
+        setTimeout(() => {
+          setPhase('confirm');
+        }, 200);
+      }
+    } else {
+      setConfirmPin(newValue);
+      if (newValue.length === 6) {
+        setTimeout(() => {
+          if (newValue === pin) {
+            localStorage.setItem('landlord_wallet_pin', newValue);
+            setPhase('success');
+          } else {
+            setShake(true);
+            setConfirmPin('');
+            setTimeout(() => setShake(false), 500);
+          }
+        }, 200);
+      }
+    }
+  };
+
+  return (
+    <div className="size-full flex flex-col bg-[#F8F7FF] overflow-hidden">
+      <div className="shrink-0 flex flex-col items-center pt-12 pb-8 px-6"
+        style={{ background: 'linear-gradient(160deg, #4c1d95 0%, #5b21b6 60%, #6d28d9 100%)' }}
+      >
+        <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-4">
+          <Lock size={30} className="text-white" />
+        </div>
+        <p className="text-white text-center" style={{ fontSize: '18px', fontWeight: 800 }}>
+          {phase === 'create' ? 'สร้างรหัส PIN' : phase === 'confirm' ? 'ยืนยันรหัส PIN' : 'สำเร็จ!'}
+        </p>
+        <p className="text-purple-200 text-center mt-1" style={{ fontSize: '11px' }}>
+          {phase === 'create'
+            ? 'กรอกรหัส PIN 6 หลัก เพื่อป้องกัน Wallet'
+            : phase === 'confirm'
+            ? 'กรอกรหัส PIN อีกครั้งเพื่อยืนยัน'
+            : 'Wallet พร้อมใช้งาน'
+          }
+        </p>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-between px-6 pb-6 pt-8">
+        <div className={shake ? '' : ''} style={shake ? { animation: 'shake 0.4s ease' } : {}}>
+          <div className="flex items-center gap-4">
+            {Array.from({ length: 6 }).map((_, i) => {
+              const current = phase === 'create' ? pin : confirmPin;
+              return (
+                <div
+                  key={i}
+                  className={`w-3 h-3 rounded-full transition-all ${
+                    i < current.length
+                      ? 'bg-indigo-600 scale-110'
+                      : 'bg-gray-200'
+                  }`}
+                />
+              );
+            })}
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%      { transform: translateX(-12px); }
+            40%      { transform: translateX(12px); }
+            60%      { transform: translateX(-8px); }
+            80%      { transform: translateX(6px); }
+          }
+        `}</style>
+
+        {phase === 'confirm' && shake && (
+          <p className="text-red-400 text-center" style={{ fontSize: '11px' }}>รหัส PIN ไม่ตรงกัน กรุณาลองอีกครั้ง</p>
+        )}
+
+        {phase === 'success' && (
+          <div className="flex flex-col items-center gap-3 mt-4">
+            <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center">
+              <CheckCircle2 size={44} className="text-emerald-500" />
+            </div>
+            <p className="text-gray-700" style={{ fontSize: '13px', fontWeight: 600 }}>กำลังเข้าสู่ Wallet…</p>
+            <Loader2 size={16} className="text-indigo-400 animate-spin" />
+          </div>
+        )}
+
+        {phase !== 'success' && (
+          <div className="grid grid-cols-3 gap-3 w-full mt-8">
+            {NUMPAD.map((key, idx) => {
+              if (key === '') return <div key={idx} />;
+              const isDelete = key === '⌫';
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleKey(key)}
+                  className={`
+                    h-14 rounded-2xl flex items-center justify-center transition-all active:scale-95
+                    ${isDelete
+                      ? 'bg-gray-200 text-gray-600 active:bg-gray-300'
+                      : 'bg-white border border-gray-100 shadow-sm text-gray-900 active:bg-indigo-50 active:border-indigo-200'
+                    }
+                  `}
+                  style={{ fontSize: isDelete ? '18px' : '22px', fontWeight: 600 }}
+                >
+                  {key}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── PIN Entry ────────────────────────────────────────────────────────────────
+
+function PinEntryScreen({ onSuccess, onBack }: { onSuccess: () => void; onBack: () => void }) {
+  const [pin, setPin] = useState('');
+  const [shake, setShake] = useState(false);
+
+  const handleKey = (key: string) => {
+    if (key === '⌫') {
+      setPin(p => p.slice(0, -1));
+      return;
+    }
+
+    if (pin.length >= 6) return;
+    const newPin = pin + key;
+    setPin(newPin);
+
+    if (newPin.length === 6) {
+      setTimeout(() => {
+        const stored = localStorage.getItem('landlord_wallet_pin');
+        if (stored === newPin) {
+          onSuccess();
+        } else {
+          setShake(true);
+          setPin('');
+          setTimeout(() => setShake(false), 500);
+        }
+      }, 200);
+    }
+  };
+
+  return (
+    <div className="size-full flex flex-col bg-[#F8F7FF] overflow-hidden">
+      <div className="shrink-0 flex flex-col items-center pt-12 pb-8 px-6"
+        style={{ background: 'linear-gradient(160deg, #4c1d95 0%, #5b21b6 60%, #6d28d9 100%)' }}
+      >
+        <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-4">
+          <Lock size={30} className="text-white" />
+        </div>
+        <p className="text-white text-center" style={{ fontSize: '18px', fontWeight: 800 }}>ยืนยันตัวตน</p>
+        <p className="text-purple-200 text-center mt-1" style={{ fontSize: '11px' }}>กรอกรหัส PIN 6 หลัก เพื่อเข้า Wallet</p>
+
+        <div className="flex items-center gap-2 mt-4 bg-white/10 rounded-full px-3 py-1.5 border border-white/20">
+          <Building2 size={12} className="text-purple-200" />
+          <p className="text-purple-100" style={{ fontSize: '10px', fontWeight: 600 }}>Landlord Wallet</p>
+          <CheckCircle2 size={11} className="text-emerald-400" />
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-between px-6 pb-6 pt-8">
+        <div className={shake ? '' : ''} style={shake ? { animation: 'shake 0.4s ease' } : {}}>
+          <div className="flex items-center gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  i < pin.length ? 'bg-indigo-600 scale-110' : 'bg-gray-200'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%      { transform: translateX(-12px); }
+            40%      { transform: translateX(12px); }
+            60%      { transform: translateX(-8px); }
+            80%      { transform: translateX(6px); }
+          }
+        `}</style>
+
+        {shake && (
+          <p className="text-red-400 text-center" style={{ fontSize: '11px' }}>รหัส PIN ไม่ถูกต้อง กรุณาลองอีกครั้ง</p>
+        )}
+
+        <div className="grid grid-cols-3 gap-3 w-full mt-8">
+          {NUMPAD.map((key, idx) => {
+            if (key === '') return <div key={idx} />;
+            const isDelete = key === '⌫';
+            return (
+              <button
+                key={idx}
+                onClick={() => handleKey(key)}
+                className={`
+                  h-14 rounded-2xl flex items-center justify-center transition-all active:scale-95
+                  ${isDelete
+                    ? 'bg-gray-200 text-gray-600 active:bg-gray-300'
+                    : 'bg-white border border-gray-100 shadow-sm text-gray-900 active:bg-indigo-50 active:border-indigo-200'
+                  }
+                `}
+                style={{ fontSize: isDelete ? '18px' : '22px', fontWeight: 600 }}
+              >
+                {key}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1 text-gray-400 active:text-gray-600 mt-2"
+          style={{ fontSize: '12px' }}
+        >
+          <ArrowLeft size={12} /> กลับ
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Receive Credential Modal ─────────────────────────────────────────────────
+
+function ReceiveCredentialModal({
+  credential,
+  onSave,
+  onCancel,
+}: {
+  credential: any;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  const [step, setStep] = useState<'receiving' | 'preview' | 'saving' | 'saved'>('receiving');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setStep('preview');
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleSave = () => {
+    setStep('saving');
+
+    setTimeout(() => {
+      const existingCreds = JSON.parse(
+        localStorage.getItem('landlord_wallet_credentials') || '[]'
+      );
+
+      const now = new Date();
+      const expiryDate = new Date(now);
+      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
+      const newCredential = {
+        id: `${credential.id}-${Date.now()}`,
+        type: credential.type,
+        issuer: credential.issuer,
+        issuerTh: credential.issuerTh,
+        name: credential.name,
+        nameTh: credential.nameTh,
+        description: credential.description,
+        issuedAt: now.toISOString(),
+        savedAt: now.toLocaleString('th-TH', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        expiresAt: expiryDate.toISOString(),
+        expiresAtDisplay: expiryDate.toLocaleDateString('th-TH', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        status: 'active',
+      };
+
+      existingCreds.push(newCredential);
+      localStorage.setItem('landlord_wallet_credentials', JSON.stringify(existingCreds));
+
+      window.dispatchEvent(new CustomEvent('landlordCredentialSaved', {
+        detail: newCredential
+      }));
+
+      setStep('saved');
+      setTimeout(() => {
+        onSave();
+      }, 1500);
+    }, 1500);
+  };
+
+  const handleClose = () => {
+    if (step === 'saving') return;
+    onCancel();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && step !== 'saving') {
+          handleClose();
+        }
+      }}
+    >
+      <div className="bg-white rounded-2xl max-w-sm w-full shadow-xl relative my-auto max-h-[90vh] flex flex-col">
+        {step !== 'saving' && (
+          <button
+            onClick={handleClose}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors z-20"
+          >
+            <X size={18} className="text-gray-600" />
+          </button>
+        )}
+
+        <div className="overflow-y-auto p-6">
+          {step === 'receiving' && (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center relative">
+                <ShieldCheck size={40} className="text-indigo-600" />
+                <div className="absolute inset-0 rounded-full border-4 border-t-indigo-600 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+              </div>
+              <div className="text-center">
+                <h3 className="font-bold text-lg text-gray-900 mb-1">
+                  กำลังรับ Credential
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {credential.issuerTh} กำลังส่ง Verifiable Credential มาให้คุณ
+                </p>
+              </div>
+            </div>
+          )}
+
+          {step === 'preview' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <CheckCircle2 size={24} className="text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900">
+                    ได้รับ Credential แล้ว
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    ตรวจสอบข้อมูลและบันทึกลง Wallet
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl overflow-hidden border-2 border-indigo-200">
+                <div className="bg-gradient-to-br from-purple-600 to-indigo-600 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {credential.type === 'district' ? <MapPin size={16} className="text-white" /> : <Building2 size={16} className="text-white" />}
+                      <p className="text-white text-xs font-semibold">
+                        {credential.type === 'district' ? 'District License' : 'University Certificate'}
+                      </p>
+                    </div>
+                    <ShieldCheck size={18} className="text-white/80" />
+                  </div>
+                  <p className="text-white font-bold text-lg">
+                    {credential.nameTh}
+                  </p>
+                  <p className="text-purple-200 text-sm mt-1">
+                    {credential.name}
+                  </p>
+                </div>
+
+                <div className="bg-white p-4 space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-500">ออกโดย</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {credential.issuerTh}
+                    </p>
+                    <p className="text-xs text-gray-500">{credential.issuer}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">รายละเอียด</p>
+                    <p className="text-sm text-gray-900">
+                      {credential.description}
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <Clock size={14} className="text-blue-600" />
+                      <div>
+                        <p className="text-xs text-gray-500">Credential หมดอายุ</p>
+                        <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                          {new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('th-TH', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })} (1 ปี)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleClose}
+                  className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium text-sm hover:bg-gray-200 transition-colors"
+                >
+                  ปิด
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="flex-1 bg-indigo-600 text-white py-3 px-4 rounded-xl font-medium text-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Download size={18} />
+                  บันทึก
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'saving' && (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center">
+                <Loader2 size={40} className="text-indigo-600 animate-spin" />
+              </div>
+              <div className="text-center">
+                <h3 className="font-bold text-lg text-gray-900 mb-1">
+                  กำลังบันทึก...
+                </h3>
+                <p className="text-sm text-gray-600">
+                  กำลังเข้ารหัสและบันทึก Credential ลง Wallet
+                </p>
+              </div>
+            </div>
+          )}
+
+          {step === 'saved' && (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center">
+                <CheckCircle2 size={40} className="text-emerald-600" />
+              </div>
+              <div className="text-center">
+                <h3 className="font-bold text-lg text-gray-900 mb-1">
+                  บันทึกสำเร็จ!
+                </h3>
+                <p className="text-sm text-gray-600">
+                  คุณสามารถดู Credential ได้ใน Wallet
+                </p>
+              </div>
+              <button
+                onClick={handleClose}
+                className="w-full bg-indigo-600 text-white py-3 px-4 rounded-xl font-medium text-sm hover:bg-indigo-700 transition-colors mt-2"
+              >
+                เสร็จสิ้น
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Wallet View ─────────────────────────────────────────────────────────
+
+function MainWallet({ onBack, credentialToReceive, onCredentialSaved }: {
+  onBack: () => void;
+  credentialToReceive?: any;
+  onCredentialSaved?: () => void;
+}) {
+  const [credentials, setCredentials] = useState<any[]>([]);
+  const [showReceiveModal, setShowReceiveModal] = useState(!!credentialToReceive);
+
+  const loadCredentials = () => {
+    const stored = localStorage.getItem('landlord_wallet_credentials');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        const now = new Date();
+        const validCredentials = parsed.filter((c: any) => {
+          if (c.expiresAt) {
+            const expiryDate = new Date(c.expiresAt);
+            return expiryDate > now && c.status === 'active';
+          }
+          return c.status === 'active';
+        });
+
+        if (validCredentials.length !== parsed.length) {
+          localStorage.setItem('landlord_wallet_credentials', JSON.stringify(validCredentials));
+        }
+
+        setCredentials(validCredentials);
+      } catch (e) {
+        setCredentials([]);
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadCredentials();
+
+    const handleCredentialSaved = () => {
+      loadCredentials();
+    };
+
+    window.addEventListener('landlordCredentialSaved', handleCredentialSaved);
+    const interval = setInterval(loadCredentials, 500);
+
+    return () => {
+      window.removeEventListener('landlordCredentialSaved', handleCredentialSaved);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const handleCredentialSave = () => {
+    setShowReceiveModal(false);
+    if (onCredentialSaved) {
+      onCredentialSaved();
+    }
+  };
+
+  return (
+    <div className="size-full flex flex-col bg-[#F8F7FF] overflow-hidden">
+      <div className="shrink-0 bg-white px-4 pt-10 pb-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200"
+          >
+            <ArrowLeft size={16} className="text-gray-700" />
+          </button>
+          <div className="flex-1">
+            <p className="text-gray-900" style={{ fontSize: '16px', fontWeight: 700 }}>Landlord Wallet</p>
+            <p className="text-gray-500" style={{ fontSize: '11px' }}>Trust Wallet for Business</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {/* Business License Card */}
+        <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl p-4 text-white">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <p className="text-purple-200" style={{ fontSize: '8px', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Business License</p>
+              <p className="text-white" style={{ fontSize: '12px', fontWeight: 700 }}>ใบอนุญาตประกอบการ</p>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+              <ShieldCheck size={15} className="text-purple-200" />
+            </div>
+          </div>
+          <div className="flex gap-3 items-center">
+            <div className="w-12 h-15 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0" style={{ height: 60 }}>
+              <Building2 size={20} className="text-white/50" />
+            </div>
+            <div>
+              <p className="text-purple-300" style={{ fontSize: '9px' }}>หอพัก</p>
+              <p className="text-white" style={{ fontSize: '13px', fontWeight: 700 }}>Happy Campus Dorm</p>
+              <p className="text-purple-300 mt-1" style={{ fontSize: '9px' }}>ประเภทธุรกิจ</p>
+              <p className="text-white" style={{ fontSize: '11px' }}>หอพักนักศึกษา</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Credentials section */}
+        {credentials.length > 0 && (
+          <div>
+            <p className="text-gray-500 mb-2" style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+              ใบอนุญาตและใบรับรอง
+            </p>
+            <div className="space-y-2">
+              {credentials.map((cred) => (
+                <div key={cred.id} className="bg-white rounded-2xl border-2 border-emerald-200 p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-emerald-100 text-emerald-600">
+                      <CheckCircle2 size={17} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-gray-900 truncate" style={{ fontSize: '12px', fontWeight: 600 }}>
+                        {cred.nameTh}
+                      </p>
+                      <p className="text-gray-400" style={{ fontSize: '10px' }}>{cred.issuerTh}</p>
+                    </div>
+                    <div className="shrink-0">
+                      <span className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+                        Active
+                      </span>
+                    </div>
+                  </div>
+                  {cred.savedAt && (
+                    <p className="text-xs text-gray-400 mt-2">บันทึกเมื่อ: {cred.savedAt}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {credentials.length === 0 && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <ShieldCheck size={24} className="text-gray-400" />
+            </div>
+            <p className="text-sm font-semibold text-gray-900 mb-1">
+              ยังไม่มี Credentials
+            </p>
+            <p className="text-xs text-gray-500">
+              ขอ Credentials จากหน่วยงานราชการเพื่อเริ่มต้นใช้งาน
+            </p>
+          </div>
+        )}
+      </div>
+
+      {showReceiveModal && credentialToReceive && (
+        <ReceiveCredentialModal
+          credential={credentialToReceive}
+          onSave={handleCredentialSave}
+          onCancel={() => {
+            setShowReceiveModal(false);
+            if (onCredentialSaved) {
+              onCredentialSaved();
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Root Component ───────────────────────────────────────────────────────────
+
+export default function LandlordWallet({
+  onNavigate,
+  credentialToReceive,
+  onCredentialSaved,
+}: LandlordWalletProps) {
+  const hasWallet = !!localStorage.getItem('landlord_wallet_pin');
+
+  // Check for pending credential from localStorage
+  const [pendingCredential, setPendingCredential] = useState<any>(null);
+
+  useEffect(() => {
+    const pending = localStorage.getItem('landlord_pending_credential');
+    if (pending) {
+      try {
+        setPendingCredential(JSON.parse(pending));
+        localStorage.removeItem('landlord_pending_credential');
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, []);
+
+  const credentialToShow = credentialToReceive || pendingCredential;
+
+  const [step, setStep] = useState<WalletStep>(
+    credentialToShow && hasWallet ? 'pin-entry' : hasWallet ? 'pin-entry' : 'consent'
+  );
+
+  useEffect(() => {
+    if (step === 'linking') {
+      const t = setTimeout(() => setStep('pin-setup'), 3200);
+      return () => clearTimeout(t);
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (credentialToShow && hasWallet && step === 'main') {
+      // Show receive modal in main view
+    }
+  }, [credentialToShow, hasWallet, step]);
+
+  if (step === 'pin-entry') {
+    return (
+      <PinEntryScreen
+        onSuccess={() => setStep(credentialToShow ? 'receive-credential' : 'main')}
+        onBack={() => onNavigate('landlord')}
+      />
+    );
+  }
+
+  if (step === 'consent') {
+    return (
+      <ConsentScreen
+        onAllow={() => setStep('qr')}
+        onDeny={() => onNavigate('landlord')}
+      />
+    );
+  }
+
+  if (step === 'qr') {
+    return (
+      <QRScreen
+        onScanned={() => setStep('linking')}
+        onBack={() => setStep('consent')}
+      />
+    );
+  }
+
+  if (step === 'linking') {
+    return <LinkingScreen />;
+  }
+
+  if (step === 'pin-setup') {
+    return <PinSetupScreen onSuccess={() => setStep(credentialToShow ? 'receive-credential' : 'main')} />;
+  }
+
+  if (step === 'receive-credential' || step === 'main') {
+    return (
+      <MainWallet
+        onBack={() => onNavigate('landlord')}
+        credentialToReceive={step === 'receive-credential' ? credentialToShow : undefined}
+        onCredentialSaved={onCredentialSaved}
+      />
+    );
+  }
+
+  return null;
+}

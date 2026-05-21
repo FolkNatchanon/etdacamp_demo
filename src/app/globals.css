@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@import "./theme.css";
+
+/* Custom scrollbar and minor tweaks for the mobile simulator */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
