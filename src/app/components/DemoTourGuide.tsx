@@ -6,17 +6,9 @@ import {
   ArrowRight, 
   ShieldCheck, 
   RotateCcw, 
-  Play, 
-  Lock, 
   ChevronRight, 
   CheckCircle2, 
-  Building2, 
-  UserCheck, 
-  FileSignature, 
-  Eye, 
-  Smartphone,
-  Menu,
-  X
+  X,
 } from 'lucide-react';
 
 interface DemoTourGuideProps {
@@ -28,18 +20,18 @@ interface DemoTourGuideProps {
 export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: DemoTourGuideProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [isThaiIdRegistered, setIsThaiIdRegistered] = useState(false);
+  const [isStudentIdSaved, setIsStudentIdSaved] = useState(false);
   const [isContractSigned, setIsContractSigned] = useState(false);
 
-  // Sync state with localStorage
+  // Sync state with localStorage every second
   useEffect(() => {
     const checkState = () => {
       setIsThaiIdRegistered(!!localStorage.getItem('trustwallet_registered'));
+      setIsStudentIdSaved(localStorage.getItem('trustwallet_student_id') === 'saved');
       setIsContractSigned(!!localStorage.getItem('trustwallet_contract_signed'));
     };
     checkState();
-    
-    // Set up a small interval to keep localStorage synced
-    const interval = setInterval(checkState, 1000);
+    const interval = setInterval(checkState, 800);
     return () => clearInterval(interval);
   }, []);
 
@@ -48,9 +40,9 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
       num: 1,
       title: 'เลือกบทบาทผู้ใช้งาน',
       subtitle: 'Select Role Portal',
-      desc: 'เริ่มต้นการสาธิตโดยการกดเลือกปุ่ม "นักศึกษา / ผู้เช่า" (Student) เพื่อเข้าไปจำลองในฝั่งผู้เช่าหอพัก',
-      trustTech: 'ระบบจะแยกสิทธิ์และพื้นที่การทำธุรกรรม (Sandboxed Role Separation) ตามมาตรฐานความปลอดภัยสูงสุด',
-      actionText: 'เริ่มที่นี่ (เลือกบทบาท)',
+      desc: 'กดเลือกปุ่ม "นักศึกษา / ผู้เช่า" เพื่อเข้าสู่ Student Trust Wallet',
+      trustTech: 'Sandboxed Role Separation: ระบบแยกสิทธิ์การเข้าถึงตามบทบาทผู้ใช้งาน',
+      actionText: 'เริ่มที่นี่ — เลือกบทบาท',
       isActive: currentScreen === '00',
       isCompleted: currentScreen !== '00',
       warp: () => {
@@ -58,107 +50,139 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
         localStorage.removeItem('trustwallet_pin');
         localStorage.removeItem('trustwallet_contract_signed');
         localStorage.removeItem('trustwallet_p1_disclosed_fields');
+        localStorage.removeItem('trustwallet_student_id');
         setIsThaiIdRegistered(false);
+        setIsStudentIdSaved(false);
         setIsContractSigned(false);
         onNavigate('00');
       }
     },
     {
       num: 2,
-      title: 'ออกบัตรประชาชนดิจิทัล (Get ID VC)',
-      subtitle: 'Issuer -> Holder (DOPA)',
-      desc: 'เข้าแท็บ Documents กดปุ่ม "เริ่มต้นลงทะเบียน" เพื่อยืนยันตัวตนกับระบบ DOPA และรับบัตรประจำตัวดิจิทัล (VC)',
-      trustTech: 'Issuing Verifiable Credentials: ผู้ออกเอกสาร (DOPA) ลงลายมือชื่อดิจิทัลด้วย DID ยืนยันข้อมูลส่งตรงเข้ากระเป๋าผู้ใช้',
-      actionText: 'ลงทะเบียนรับ VC ประชาชน',
+      title: 'ยืนยัน Wallet ด้วยบัตรประชาชนดิจิทัล (DOPA VC)',
+      subtitle: 'Issuer → Holder (DOPA)',
+      desc: 'อยู่ที่แท็บ Documents กดปุ่ม "อนุญาต" แล้วรอ QR สแกนอัตโนมัติ จากนั้นตั้งรหัสอัตโนมัติ 123456',
+      trustTech: 'Verifiable Credential Issuance: DOPA ลงลายมือชื่อดิจิทัลด้วย DID ส่ง VC ตรงสู่ Wallet ผู้ใช้',
+      actionText: 'รับ VC บัตรประชาชน (DOPA)',
       isActive: currentScreen === '01' && shellTab === 'docs' && !isThaiIdRegistered,
-      isCompleted: isThaiIdRegistered || ['03', '04', '05', '06', 'landlord', '07', '09'].includes(currentScreen),
+      isCompleted: isThaiIdRegistered,
       warp: () => {
         localStorage.removeItem('trustwallet_registered');
         localStorage.removeItem('trustwallet_pin');
         localStorage.removeItem('trustwallet_contract_signed');
         localStorage.removeItem('trustwallet_p1_disclosed_fields');
+        localStorage.removeItem('trustwallet_student_id');
         setIsThaiIdRegistered(false);
+        setIsStudentIdSaved(false);
         setIsContractSigned(false);
         onNavigate('01', 'docs');
       }
     },
     {
       num: 3,
-      title: 'เลือกห้องและตรวจสอบผู้ให้เช่า (P5)',
-      subtitle: 'Holder -> Verifier / Mutual Trust',
-      desc: 'ไปที่แท็บ Home เลือกห้องพัก "Happy Campus Dorm" กด "ขอเช่าห้อง" จากนั้นกด "ส่งคำขอเช่า" เพื่อพิสูจน์ความน่าเชื่อถือของหอพัก',
-      trustTech: 'ETDA P5 Standard: ตรวจสอบความถูกต้องของใบอนุญาตหอพัก ยืนยันคีย์เจ้าของหอพัก (Proof of Possession) แบบเรียลไทม์',
-      actionText: 'เลือกหอพัก & ตรวจสอบ P5',
-      isActive: (currentScreen === '01' && shellTab === 'home') || currentScreen === 'dorm-detail',
-      isCompleted: ['03', '04', '05', '06', 'landlord', '07', '09'].includes(currentScreen),
+      title: 'รับบัตรนักศึกษาดิจิทัล (Student ID VC)',
+      subtitle: 'Issuer → Holder (University)',
+      desc: 'กดปุ่ม "ขอบัตรนักศึกษาดิจิทัล" รอระบบประมวลผล แล้วกด "บันทึกลง Trust Wallet"',
+      trustTech: 'Multi-Issuer Wallet: มหาวิทยาลัยเป็น Issuer ออก Student VC ตรวจสอบสถานะจากทะเบียนนักศึกษา',
+      actionText: 'รับ VC บัตรนักศึกษา',
+      isActive: currentScreen === '01' && shellTab === 'docs' && isThaiIdRegistered && !isStudentIdSaved,
+      isCompleted: isStudentIdSaved,
       warp: () => {
         localStorage.setItem('trustwallet_registered', '1');
-        localStorage.setItem('trustwallet_pin', '1234');
+        localStorage.setItem('trustwallet_pin', '123456');
+        localStorage.removeItem('trustwallet_student_id');
         setIsThaiIdRegistered(true);
-        onNavigate('01', 'home');
+        setIsStudentIdSaved(false);
+        onNavigate('01', 'docs');
       }
     },
     {
       num: 4,
-      title: 'ให้ความยินยอมแชร์ข้อมูล (Consent & VP)',
-      subtitle: 'Selective Disclosure (Consent)',
-      desc: 'ตรวจสอบข้อมูลส่วนบุคคลที่จะแชร์ให้กับหอพัก จากนั้นกด "ยินยอมและส่งข้อมูล" โดยข้อมูลที่ไม่เกี่ยวข้องจะไม่ถูกส่งออก',
-      trustTech: 'Verifiable Presentation (VP) & PDPA: ผู้ใช้เปิดเผยข้อมูลเฉพาะที่จำเป็น (Selective Disclosure) ป้องกันข้อมูลส่วนบุคคลรั่วไหล',
-      actionText: 'ตรวจสอบ & ยินยอมแชร์ VP',
-      isActive: ['03', '04', '05'].includes(currentScreen),
-      isCompleted: ['06', 'landlord', '07', '09'].includes(currentScreen) || isContractSigned,
+      title: 'เลือกหอพักและตรวจสอบผู้ให้เช่า (P5)',
+      subtitle: 'Holder → Verifier / Mutual Trust',
+      desc: 'ไปแท็บ Home กด "Happy Campus Dorm" → "ขอเช่าห้อง" → ยืนยันเพศ → "ส่งคำขอเช่า"',
+      trustTech: 'ETDA P5 Standard: ตรวจสอบใบอนุญาตหอพัก ยืนยัน Proof of Possession แบบเรียลไทม์',
+      actionText: 'เลือกหอพัก & ส่งคำขอเช่า',
+      isActive: (currentScreen === '01' && shellTab === 'home') || currentScreen === 'dorm-detail' || ['03','04'].includes(currentScreen),
+      isCompleted: ['05', '06', 'landlord', '07', '09'].includes(currentScreen) || isContractSigned,
       warp: () => {
         localStorage.setItem('trustwallet_registered', '1');
-        localStorage.setItem('trustwallet_pin', '1234');
+        localStorage.setItem('trustwallet_pin', '123456');
+        localStorage.setItem('trustwallet_student_id', 'saved');
         setIsThaiIdRegistered(true);
-        // Warp directly to the consent screen (Frame 6)
-        onNavigate('05');
+        setIsStudentIdSaved(true);
+        onNavigate('01', 'home');
       }
     },
     {
       num: 5,
-      title: 'ผู้ให้เช่าตรวจสอบข้อมูลผู้สมัคร',
+      title: 'ให้ความยินยอมแชร์ข้อมูล (Consent & VP)',
+      subtitle: 'Selective Disclosure (Consent)',
+      desc: 'ตรวจสอบข้อมูลที่จะแชร์ให้หอพัก กด "ยินยอมและส่งข้อมูล" — ข้อมูลที่ไม่เกี่ยวข้องจะไม่ถูกส่ง',
+      trustTech: 'Verifiable Presentation (VP) & PDPA: Selective Disclosure ผู้ใช้ควบคุมข้อมูลที่เปิดเผย',
+      actionText: 'ตรวจสอบ & ยินยอมแชร์ VP',
+      isActive: currentScreen === '05',
+      isCompleted: ['06', 'landlord', '07', '09'].includes(currentScreen) || isContractSigned,
+      warp: () => {
+        localStorage.setItem('trustwallet_registered', '1');
+        localStorage.setItem('trustwallet_pin', '123456');
+        localStorage.setItem('trustwallet_student_id', 'saved');
+        setIsThaiIdRegistered(true);
+        setIsStudentIdSaved(true);
+        onNavigate('05');
+      }
+    },
+    {
+      num: 6,
+      title: 'ผู้ให้เช่าตรวจสอบและอนุมัติ',
       subtitle: 'Verifier Verification Console',
-      desc: 'สลับมาฝั่งเจ้าของหอพักเพื่อตรวจรับคำขอเช่า คลิกแท็บ "คำขอเช่า" กดดูข้อมูลผู้สมัครที่ระบบตรวจสอบความถูกต้องให้อัตโนมัติ',
-      trustTech: 'Real-time VP Verification: ระบบฝั่งผู้รับ (Verifier) ตรวจเช็คลายเซ็นในบัตร VC ของผู้เช่าว่าออกโดยสถาบันจริงและไม่ถูกเพิกถอน',
+      desc: 'สลับมาฝั่งเจ้าของหอ กดดูข้อมูล "สมชาย ใจดี" แล้วกด "Approve Tenant" เพื่อลงนามฝั่งเจ้าของหอ',
+      trustTech: 'Real-time VP Verification: ฝั่ง Verifier ตรวจลายเซ็น VC ว่าออกโดยสถาบันจริงและไม่ถูกเพิกถอน',
       actionText: 'สลับไปแดชบอร์ดเจ้าของหอ',
       isActive: ['landlord', '07'].includes(currentScreen),
       isCompleted: currentScreen === '09' || isContractSigned,
       warp: () => {
         localStorage.setItem('trustwallet_registered', '1');
-        localStorage.setItem('trustwallet_pin', '1234');
-        setIsThaiIdRegistered(true);
-        // Pre-disclose somchai fields to look realistic
+        localStorage.setItem('trustwallet_pin', '123456');
+        localStorage.setItem('trustwallet_student_id', 'saved');
         localStorage.setItem('trustwallet_p1_disclosed_fields', JSON.stringify(['name', 'status', 'university', 'faculty', 'year']));
+        setIsThaiIdRegistered(true);
+        setIsStudentIdSaved(true);
         onNavigate('landlord');
       }
     },
     {
-      num: 6,
+      num: 7,
       title: 'ลงนามสัญญาดิจิทัลร่วมกัน (e-Contract)',
       subtitle: 'Dual Cryptographic Signing (QES)',
-      desc: 'ขั้นตอนสุดท้าย: สัญญาเช่าอิเล็กทรอนิกส์ถูกลงนามโดยเจ้าของหอพักแล้ว เหลือให้ผู้เช่าสแกน Face ID เพื่อลงนามแบบเข้ารหัสกุญแจคู่',
-      trustTech: 'Dual Signature & Non-repudiation: อ้างอิง พ.ร.บ. ธุรกรรมฯ ม.26 และ ม.28 ลายมือชื่อดิจิทัลผูกพันทางกฎหมาย 100%',
+      desc: 'ขั้นตอนสุดท้าย: เลื่อนลงล่างสุด กดปุ่ม "ลงนามด้วย Face ID" เพื่อลงนามฝั่งผู้เช่า',
+      trustTech: 'Dual Signature & Non-repudiation: อ้างอิง พ.ร.บ. ธุรกรรมฯ ม.26 และ ม.28 ผูกพันทางกฎหมาย 100%',
       actionText: 'ลงนามสัญญาเช่า Face ID',
       isActive: currentScreen === '09',
       isCompleted: isContractSigned,
       warp: () => {
         localStorage.setItem('trustwallet_registered', '1');
-        localStorage.setItem('trustwallet_pin', '1234');
+        localStorage.setItem('trustwallet_pin', '123456');
+        localStorage.setItem('trustwallet_student_id', 'saved');
+        localStorage.setItem('trustwallet_p1_disclosed_fields', JSON.stringify(['name', 'status', 'university', 'faculty', 'year']));
         setIsThaiIdRegistered(true);
+        setIsStudentIdSaved(true);
         onNavigate('09');
       }
     }
   ];
 
   const currentStep = steps.find(s => s.isActive) || steps[0];
+  const totalSteps = steps.length;
 
   const handleReset = () => {
     localStorage.removeItem('trustwallet_registered');
     localStorage.removeItem('trustwallet_pin');
     localStorage.removeItem('trustwallet_contract_signed');
     localStorage.removeItem('trustwallet_p1_disclosed_fields');
+    localStorage.removeItem('trustwallet_student_id');
     setIsThaiIdRegistered(false);
+    setIsStudentIdSaved(false);
     setIsContractSigned(false);
     onNavigate('00');
   };
@@ -169,15 +193,16 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
       <div className="flex md:hidden fixed top-0 left-0 right-0 h-[50px] bg-slate-950/95 border-b border-slate-800/80 z-[100] px-3 items-center justify-between backdrop-blur-md text-white select-none">
         <div className="flex items-center gap-2 min-w-0">
           <div className="shrink-0 bg-indigo-600 text-[10px] font-bold px-1.5 py-0.5 rounded font-mono">
-            {currentStep.num}/6
+            {currentStep.num}/{totalSteps}
           </div>
-          <div className="text-[11.5px] font-bold truncate text-slate-200">
-            {currentStep.num === 1 && "👉 เลือกบทบาท 'นักศึกษา / ผู้เช่า'"}
-            {currentStep.num === 2 && "👉 ไปแท็บ Documents > ลงทะเบียนรับ DOPA ID VC"}
-            {currentStep.num === 3 && "👉 ไปหน้าแรก > ขอเช่าห้อง Happy Campus > ส่งคำเช่า"}
-            {currentStep.num === 4 && "👉 ตรวจสอบความน่าเชื่อถือ P5 > กด ยินยอมแชร์ข้อมูล"}
-            {currentStep.num === 5 && "👉 ดูคำขอ สมชาย ใจดี > กดอนุมัติ (Approve Tenant)"}
-            {currentStep.num === 6 && "👉 เลื่อนลงล่างสุด > ลงนามสัญญาด้วย Face ID"}
+          <div className="text-[11px] font-bold truncate text-slate-200">
+            {currentStep.num === 1 && "👉 กดเลือกบทบาท 'นักศึกษา / ผู้เช่า'"}
+            {currentStep.num === 2 && "👉 กด 'อนุญาต' รอ QR สแกน → ตั้งรหัสอัตโนมัติ"}
+            {currentStep.num === 3 && "👉 กด 'ขอบัตรนักศึกษาดิจิทัล' → บันทึกลง Wallet"}
+            {currentStep.num === 4 && "👉 ไปหน้าแรก → กด Happy Campus → ขอเช่าห้อง"}
+            {currentStep.num === 5 && "👉 ตรวจสอบ P5 → กด 'ยินยอมแชร์ข้อมูล'"}
+            {currentStep.num === 6 && "👉 กดดู 'สมชาย ใจดี' → Approve Tenant"}
+            {currentStep.num === 7 && "👉 เลื่อนลงล่าง → ลงนามด้วย Face ID"}
           </div>
         </div>
 
@@ -245,7 +270,7 @@ export default function DemoTourGuide({ currentScreen, shellTab, onNavigate }: D
                 
                 <div className="flex items-center justify-between">
                   <span className="bg-indigo-500 text-white font-mono text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    Step {currentStep.num} / 6
+                    Step {currentStep.num} / {totalSteps}
                   </span>
                   <span className="text-[10px] text-slate-400 font-bold font-mono uppercase tracking-wide">
                     {currentStep.subtitle}

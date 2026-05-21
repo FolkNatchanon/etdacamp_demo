@@ -358,6 +358,17 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
     if (name)   setDormName(name);
   }, []);
 
+  // Disable back navigation until contract is signed
+  const [isContractSigned, setIsContractSigned] = useState(
+    () => !!localStorage.getItem('trustwallet_contract_signed')
+  );
+
+  useEffect(() => {
+    const poll = () => setIsContractSigned(!!localStorage.getItem('trustwallet_contract_signed'));
+    const id = setInterval(poll, 800);
+    return () => clearInterval(id);
+  }, []);
+
   const filteredRooms = selectedFloor === 'all'
     ? ROOMS
     : ROOMS.filter(r => r.floor === selectedFloor);
@@ -376,8 +387,13 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
       <div className="shrink-0 relative" style={{ background: heroGradient, paddingBottom: 20 }}>
         <div className="flex items-center gap-3 px-4 pt-10 pb-3">
           <button
-            onClick={() => onNavigate('01')}
-            className="w-8 h-8 rounded-full bg-white/15 border border-white/20 flex items-center justify-center active:bg-white/25"
+            onClick={isContractSigned ? () => onNavigate('01') : undefined}
+            disabled={!isContractSigned}
+            className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${
+              isContractSigned
+                ? 'bg-white/15 border-white/20 active:bg-white/25'
+                : 'bg-white/5 border-white/10 opacity-30 cursor-not-allowed'
+            }`}
           >
             <ArrowLeft size={16} className="text-white" />
           </button>
@@ -625,8 +641,11 @@ export default function DormDetailPage({ onNavigate }: DormDetailPageProps) {
       {/* ── Sticky CTA ── */}
       <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 pt-3 pb-6 flex gap-3">
         <button
-          onClick={() => onNavigate('01')}
-          className="w-10 h-12 rounded-2xl bg-gray-100 flex items-center justify-center shrink-0 active:bg-gray-200"
+          onClick={isContractSigned ? () => onNavigate('01') : undefined}
+          disabled={!isContractSigned}
+          className={`w-10 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+            isContractSigned ? 'bg-gray-100 active:bg-gray-200' : 'bg-gray-50 opacity-30 cursor-not-allowed'
+          }`}
         >
           <ArrowLeft size={18} className="text-gray-600" />
         </button>

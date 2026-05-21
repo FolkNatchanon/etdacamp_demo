@@ -190,15 +190,16 @@ function ConsentScreen({ onAllow, onDeny }: { onAllow: () => void; onDeny: () =>
       <div className="shrink-0 px-4 pb-8 pt-3 bg-white border-t border-gray-100 space-y-2">
         <button
           onClick={onAllow}
-          className="w-full py-3 rounded-2xl bg-indigo-600 text-white flex items-center justify-center gap-2 active:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+          className="w-full py-3 rounded-2xl bg-indigo-600 text-white flex items-center justify-center gap-2 active:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 animate-pulse-glow"
           style={{ fontSize: '14px', fontWeight: 700 }}
         >
           <ShieldCheck size={16} />
           อนุญาต (Allow)
         </button>
+        {/* Deny button disabled during guided demo */}
         <button
-          onClick={onDeny}
-          className="w-full py-2 text-gray-400 active:text-gray-600 transition-colors"
+          disabled
+          className="w-full py-2 text-gray-200 cursor-not-allowed opacity-30"
           style={{ fontSize: '13px' }}
         >
           ไม่อนุญาต (Deny)
@@ -246,12 +247,12 @@ function QRScreen({ onScanned, onBack }: { onScanned: () => void; onBack: () => 
 
   return (
     <div className="size-full flex flex-col bg-[#F8F7FF] overflow-hidden">
-      {/* Header */}
+      {/* Header — back button disabled during guided demo */}
       <div className="shrink-0 bg-white px-4 pt-10 pb-4 shadow-sm">
         <div className="flex items-center gap-3">
           <button
-            onClick={onBack}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200"
+            disabled
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 opacity-30 cursor-not-allowed"
           >
             <ArrowLeft size={16} className="text-gray-700" />
           </button>
@@ -552,14 +553,14 @@ function StudentIDSection() {
         บัตรนักศึกษา
       </p>
 
-      {/* Idle: request button */}
+      {/* Idle: request button — pulse to guide user */}
       {status === 'idle' && (
         <button
           onClick={handleRequest}
-          className="w-full border-2 border-dashed border-indigo-200 rounded-3xl py-5 flex flex-col items-center gap-2 active:bg-indigo-50 bg-white"
+          className="w-full border-2 border-dashed border-indigo-300 rounded-3xl py-5 flex flex-col items-center gap-2 active:bg-indigo-50 bg-white animate-pulse-glow"
         >
-          <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center">
-            <CreditCard size={20} className="text-indigo-500" />
+          <div className="w-11 h-11 rounded-2xl bg-indigo-100 border border-indigo-200 flex items-center justify-center">
+            <CreditCard size={20} className="text-indigo-600" />
           </div>
           <p className="text-indigo-700" style={{ fontSize: 13, fontWeight: 700 }}>ขอบัตรนักศึกษาดิจิทัล</p>
           <p className="text-gray-400" style={{ fontSize: 10 }}>ออกโดย {STUDENT_ID_DATA.university}</p>
@@ -595,7 +596,7 @@ function StudentIDSection() {
           <StudentIDCard />
           <button
             onClick={handleSave}
-            className="w-full py-3 rounded-2xl text-white flex items-center justify-center gap-2 active:scale-[0.98]"
+            className="w-full py-3 rounded-2xl text-white flex items-center justify-center gap-2 active:scale-[0.98] animate-pulse-glow"
             style={{ background: 'linear-gradient(135deg,#1e40af,#4f46e5)', fontSize: 13, fontWeight: 800, boxShadow: '0 6px 18px rgba(79,70,229,0.3)' }}
           >
             <Download size={15} />
@@ -994,6 +995,17 @@ function TenantCredentialsSection() {
 // ─── Main documents hub ───────────────────────────────────────────────────────
 
 function MainDocs({ onBack }: { onBack: () => void }) {
+  // Detect whether student ID is saved to decide which actions to allow
+  const [isStudentIdSaved, setIsStudentIdSaved] = useState(
+    () => localStorage.getItem('trustwallet_student_id') === 'saved'
+  );
+
+  useEffect(() => {
+    const poll = () => setIsStudentIdSaved(localStorage.getItem('trustwallet_student_id') === 'saved');
+    const id = setInterval(poll, 800);
+    return () => clearInterval(id);
+  }, []);
+
   const [docStatuses, setDocStatuses] = useState<Record<string, DocStatus>>({});
   const [requesting, setRequesting] = useState(false);
   const [showRequestSheet, setShowRequestSheet] = useState(false);
@@ -1130,12 +1142,13 @@ function MainDocs({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="size-full flex flex-col bg-[#F8F7FF] overflow-hidden">
-      {/* Header */}
+      {/* Header — lock actions until student ID is saved */}
       <div className="shrink-0 bg-white px-4 pt-10 pb-4 shadow-sm">
         <div className="flex items-center gap-3">
           <button
-            onClick={onBack}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200"
+            onClick={isStudentIdSaved ? onBack : undefined}
+            disabled={!isStudentIdSaved}
+            className={`w-8 h-8 flex items-center justify-center rounded-full ${isStudentIdSaved ? 'bg-gray-100 active:bg-gray-200' : 'bg-gray-50 opacity-30 cursor-not-allowed'}`}
           >
             <ArrowLeft size={16} className="text-gray-700" />
           </button>
@@ -1143,16 +1156,20 @@ function MainDocs({ onBack }: { onBack: () => void }) {
             <p className="text-gray-900" style={{ fontSize: '16px', fontWeight: 700 }}>My Documents</p>
             <p className="text-gray-500" style={{ fontSize: '11px' }}>Trust Wallet</p>
           </div>
+          {/* Hide 'Request Doc' button until student ID is saved */}
+          {isStudentIdSaved && (
+            <button
+              onClick={() => setShowRequestSheet(true)}
+              className="flex items-center gap-1.5 bg-indigo-600 text-white rounded-full px-3 py-1.5 active:bg-indigo-700"
+              style={{ fontSize: '11px', fontWeight: 700 }}
+            >
+              <Plus size={12} /> ขอเอกสาร
+            </button>
+          )}
           <button
-            onClick={() => setShowRequestSheet(true)}
-            className="flex items-center gap-1.5 bg-indigo-600 text-white rounded-full px-3 py-1.5 active:bg-indigo-700"
-            style={{ fontSize: '11px', fontWeight: 700 }}
-          >
-            <Plus size={12} /> ขอเอกสาร
-          </button>
-          <button
-            onClick={onBack}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 ml-1"
+            onClick={isStudentIdSaved ? onBack : undefined}
+            disabled={!isStudentIdSaved}
+            className={`w-8 h-8 flex items-center justify-center rounded-full ml-1 ${isStudentIdSaved ? 'bg-gray-100 active:bg-gray-200' : 'bg-gray-50 opacity-30 cursor-not-allowed'}`}
           >
             <X size={16} className="text-gray-700" />
           </button>
@@ -1211,10 +1228,11 @@ function MainDocs({ onBack }: { onBack: () => void }) {
           </div>
         </div>
 
-        {/* Student ID Credential */}
+        {/* Student ID Credential — shown always; other sections only after student ID is saved */}
         <StudentIDSection />
 
-        {/* Tenant Credentials Section */}
+        {/* Tenant Credentials Section — hidden during onboarding */}
+        {!isStudentIdSaved ? null : /* Tenant section below */true && <>
         <TenantCredentialsSection />
 
         {/* Documents section */}
@@ -1363,9 +1381,10 @@ function MainDocs({ onBack }: { onBack: () => void }) {
             </div>
           )}
         </div>
+      </> /* end isStudentIdSaved guard */}
       </div>
 
-      {/* Request sheet overlay */}
+      {/* Request sheet overlay — only available after student ID saved */}
       {showRequestSheet && (
         <div className="absolute inset-0 z-20 flex flex-col justify-end" style={{ background: 'rgba(0,0,0,0.4)' }}
           onClick={() => setShowRequestSheet(false)}
@@ -1606,22 +1625,23 @@ function PinSetupScreen({ onDone }: { onDone: () => void }) {
             ⚡ ตั้งรหัสผ่านอัตโนมัติ (123456)
           </button>
         )}
+        {/* Numpad grayed out — use auto-fill button above instead */}
 
-        {/* Numpad */}
+        {/* Numpad — disabled during guided demo; use auto-fill button */}
         {phase !== 'success' && (
-          <div className="grid grid-cols-3 gap-3 w-full mt-2">
+          <div className="grid grid-cols-3 gap-3 w-full mt-2 opacity-20 pointer-events-none">
             {NUMPAD.map((key, idx) => {
               if (key === '') return <div key={idx} />;
               const isDelete = key === '⌫';
               return (
                 <button
                   key={idx}
-                  onClick={() => handleKey(key)}
+                  disabled
                   className={`
-                    h-14 rounded-2xl flex items-center justify-center transition-all active:scale-95
+                    h-14 rounded-2xl flex items-center justify-center
                     ${isDelete
-                      ? 'bg-gray-200 text-gray-600 active:bg-gray-300'
-                      : 'bg-white border border-gray-100 shadow-sm text-gray-900 active:bg-indigo-50 active:border-indigo-200'
+                      ? 'bg-gray-200 text-gray-600'
+                      : 'bg-white border border-gray-100 shadow-sm text-gray-900'
                     }
                   `}
                   style={{ fontSize: isDelete ? '18px' : '22px', fontWeight: 600 }}

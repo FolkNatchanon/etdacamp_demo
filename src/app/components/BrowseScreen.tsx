@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   SlidersHorizontal,
@@ -309,6 +309,16 @@ export default function BrowseScreen({ onNavigate }: BrowseScreenProps) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [showFilter, setShowFilter] = useState(false);
+  // Lock controls until the contract is signed
+  const [isContractSigned, setIsContractSigned] = useState(
+    () => !!localStorage.getItem('trustwallet_contract_signed')
+  );
+
+  useEffect(() => {
+    const poll = () => setIsContractSigned(!!localStorage.getItem('trustwallet_contract_signed'));
+    const id = setInterval(poll, 800);
+    return () => clearInterval(id);
+  }, []);
 
   const filtered = DORMS.filter((d) => {
     const matchesQuery =
@@ -350,8 +360,8 @@ export default function BrowseScreen({ onNavigate }: BrowseScreenProps) {
           </button>
         </div>
 
-        {/* Search bar */}
-        <div className="flex gap-2">
+        {/* Search bar — disabled until contract signed */}
+        <div className={`flex gap-2 ${isContractSigned ? '' : 'pointer-events-none opacity-40'}`}>
           <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-2xl px-3 py-2.5">
             <Search size={15} className="text-gray-400 shrink-0" />
             <input
@@ -371,8 +381,8 @@ export default function BrowseScreen({ onNavigate }: BrowseScreenProps) {
           </button>
         </div>
 
-        {/* Filter chips */}
-        <div className="flex gap-2 mt-3 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
+        {/* Filter chips — disabled until contract signed */}
+        <div className={`flex gap-2 mt-3 overflow-x-auto pb-0.5 ${isContractSigned ? '' : 'pointer-events-none opacity-40'}`} style={{ scrollbarWidth: "none" }}>
           {FILTERS.map((f) => (
             <button
               key={f.id}

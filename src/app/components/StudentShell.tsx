@@ -217,8 +217,6 @@ export default function StudentShell({
   initialTab = "home",
 }: StudentShellProps) {
   const [tab, setTab] = useState<ShellTab>(initialTab);
-  const [showThaiIdPrompt, setShowThaiIdPrompt] =
-    useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [showPINVerification, setShowPINVerification] = useState(false);
   const [pendingQRData, setPendingQRData] = useState<string | null>(null);
@@ -229,10 +227,46 @@ export default function StudentShell({
   } | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Check if user has registered Thai ID
-  const isThaiIdRegistered = !!localStorage.getItem(
-    "trustwallet_registered",
+  // ── Onboarding lock state ──────────────────────────────────────────────────
+  const [isThaiIdRegistered, setIsThaiIdRegistered] = useState(
+    () => !!localStorage.getItem("trustwallet_registered")
   );
+  const [isStudentIdSaved, setIsStudentIdSaved] = useState(
+    () => localStorage.getItem("trustwallet_student_id") === "saved"
+  );
+
+  // Poll localStorage to detect when IDs are saved
+  useEffect(() => {
+    const poll = () => {
+      const thaiId = !!localStorage.getItem("trustwallet_registered");
+      const studentId = localStorage.getItem("trustwallet_student_id") === "saved";
+      setIsThaiIdRegistered(thaiId);
+      setIsStudentIdSaved(studentId);
+    };
+    const id = setInterval(poll, 800);
+    return () => clearInterval(id);
+  }, []);
+
+  // Enforce tab lock: step 2 (no Thai ID) and step 3 (no student ID) → force docs
+  // step 4+ (both IDs saved, not contracted) → home is primary, allow home only via guide
+  const forcedTab: ShellTab | null = !isThaiIdRegistered
+    ? "docs"
+    : !isStudentIdSaved
+    ? "docs"
+    : null;
+
+  // Use forced tab if locked, else whatever was chosen
+  const activeTab = forcedTab ?? tab;
+
+  // Whenever the forced tab kicks in, sync local state too
+  useEffect(() => {
+    if (forcedTab && tab !== forcedTab) {
+      setTab(forcedTab);
+    }
+  }, [forcedTab]);
+
+  // Onboarding complete = both VCs saved
+  const onboardingComplete = isThaiIdRegistered && isStudentIdSaved;
 
   // Check if should navigate to documents (from credential save)
   useEffect(() => {
@@ -244,14 +278,8 @@ export default function StudentShell({
   }, []);
 
   const handleTabClick = (targetTab: ShellTab) => {
-    // Check if trying to access My Dorm or Documents without Thai ID
-    if (
-      (targetTab === "dorm" || targetTab === "docs") &&
-      !isThaiIdRegistered
-    ) {
-      setShowThaiIdPrompt(true);
-      return;
-    }
+    // During onboarding, block all tab changes
+    if (!onboardingComplete) return;
     setTab(targetTab);
   };
 
@@ -278,21 +306,17 @@ export default function StudentShell({
   };
 
   const handleQRScan = (data: string) => {
-    // Store QR data and show PIN verification
     setPendingQRData(data);
     setShowQRScanner(false);
     setShowPINVerification(true);
   };
 
   const handlePINVerified = (pin: string) => {
-    // PIN verified successfully, parse QR data
     setShowPINVerification(false);
 
     if (pendingQRData) {
       try {
         const qrData = JSON.parse(pendingQRData);
-
-        // Show credential request modal
         setCredentialRequest({
           verifier: qrData.verifier || "ผู้ให้เช่าหอพัก",
           requestedCredentials: qrData.credentials || [
@@ -303,7 +327,6 @@ export default function StudentShell({
           purpose: qrData.purpose || "ยืนยันตัวตนเพื่อเช่าหอพัก",
         });
       } catch (e) {
-        // If not JSON, create a basic request
         setCredentialRequest({
           verifier: "ผู้ขอข้อมูล",
           requestedCredentials: [
@@ -314,7 +337,6 @@ export default function StudentShell({
         });
       }
     }
-
     setPendingQRData(null);
   };
 
@@ -336,11 +358,8 @@ export default function StudentShell({
   };
 
   const handleScanClick = () => {
-    // Check if Thai ID is registered
-    if (!isThaiIdRegistered) {
-      setShowThaiIdPrompt(true);
-      return;
-    }
+    // Block QR scan during onboarding
+    if (!onboardingComplete) return;
     setShowQRScanner(true);
   };
 
@@ -352,7 +371,7 @@ export default function StudentShell({
           <div
             key={id}
             className="absolute inset-0 flex flex-col"
-            style={{ display: tab === id ? "flex" : "none" }}
+            style={{ display: activeTab === id ? "flex" : "none" }}
           >
             {id === "home" && (
               <BrowseScreen onNavigate={handleChildNav} />
@@ -360,7 +379,6 @@ export default function StudentShell({
             {id === "dorm" && (
               <DormPaymentPage onNavigate={handleChildNav} />
             )}{" "}
-            {/* ✅ ซ่อมแซมหน้าแสดงผลหอพักเรียบร้อย */}
             {id === "docs" && (
               <MyDocumentsPage onNavigate={handleChildNav} />
             )}
@@ -382,16 +400,22 @@ export default function StudentShell({
       >
         {/* First two tabs */}
         {TABS.slice(0, 2).map(({ id, label, Icon }) => {
-          const active = tab === id;
+          const active = activeTab === id;
+          // Lock: during onboarding, all tabs are locked except docs (or home after complete)
+          const isLocked = !onboardingComplete && id !== forcedTab;
+          const isHomePulse = onboardingComplete && id === "home" && activeTab === "docs";
           return (
             <button
               key={id}
               onClick={() => handleTabClick(id)}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 text-xs ${
+              disabled={isLocked}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 text-xs transition-all ${
                 active
                   ? "text-[#4f46e5] font-semibold"
+                  : isLocked
+                  ? "text-gray-200 pointer-events-none"
                   : "text-gray-400"
-              }`}
+              } ${isHomePulse ? "animate-pulse-glow rounded-xl" : ""}`}
             >
               <Icon active={active} />
               <span>{label}</span>
@@ -403,25 +427,34 @@ export default function StudentShell({
         <div className="flex-1 flex items-center justify-center">
           <button
             onClick={handleScanClick}
-            className="absolute -top-6 w-14 h-14 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95"
+            disabled={!onboardingComplete}
+            className={`absolute -top-6 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all ${
+              onboardingComplete
+                ? "bg-gradient-to-br from-indigo-600 to-indigo-700 hover:shadow-xl hover:scale-105 active:scale-95"
+                : "bg-gray-200 pointer-events-none opacity-30"
+            }`}
             style={{
               border: "4px solid white",
             }}
           >
-            <QrCode size={28} className="text-white" />
+            <QrCode size={28} className={onboardingComplete ? "text-white" : "text-gray-400"} />
           </button>
         </div>
 
         {/* Last two tabs */}
         {TABS.slice(2).map(({ id, label, Icon }) => {
-          const active = tab === id;
+          const active = activeTab === id;
+          const isLocked = !onboardingComplete && id !== forcedTab;
           return (
             <button
               key={id}
               onClick={() => handleTabClick(id)}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 text-xs ${
+              disabled={isLocked}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 text-xs transition-all ${
                 active
                   ? "text-[#4f46e5] font-semibold"
+                  : isLocked
+                  ? "text-gray-200 pointer-events-none"
                   : "text-gray-400"
               }`}
             >
@@ -431,44 +464,6 @@ export default function StudentShell({
           );
         })}
       </nav>
-
-      {/* ── ⚠️ ป๊อปอัปแจ้งเตือนล็อกหน้าจอ (Thai ID Registration Prompt Modal) ── */}
-      {showThaiIdPrompt && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-xl">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2 text-amber-500">
-                <AlertCircle size={24} />
-                <h3 className="font-bold text-lg text-gray-900">
-                  ต้องลงทะเบียน Thai ID
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowThaiIdPrompt(false)}
-                className="text-gray-400 hover:text-gray-600 p-1"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <p className="text-sm text-gray-600 leading-relaxed">
-              การเชื่อมต่อ Thai ID
-              ช่วยยืนยันตัวตนและปกป้องข้อมูลของคุณอย่างปลอดภัย
-            </p>
-
-            {/* ✅ แก้ไขปุ่มกดให้เด้งไปที่หน้า Documents ('docs') เรียบร้อย */}
-            <button
-              onClick={() => {
-                setTab("docs");
-                setShowThaiIdPrompt(false);
-              }}
-              className="w-full bg-[#4f46e5] text-white py-3 px-4 rounded-xl font-medium text-sm hover:bg-[#4338ca] transition-colors"
-            >
-              ไปยังหน้า Documents เพื่อลงทะเบียน
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── QR Scanner Modal ── */}
       {showQRScanner && (
