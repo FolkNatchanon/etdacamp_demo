@@ -13,8 +13,17 @@ export function useIsMobile() {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };
     mql.addEventListener("change", onChange);
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    return () => mql.removeEventListener("change", onChange);
+    
+    // Defer setting state to prevent synchronous cascading render warning on mount
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    };
+    const frameId = requestAnimationFrame(checkMobile);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      mql.removeEventListener("change", onChange);
+    };
   }, []);
 
   return !!isMobile;

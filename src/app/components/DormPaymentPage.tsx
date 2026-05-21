@@ -223,14 +223,14 @@ function ResidenceCard({ r, onPay }: { r: Residence; onPay: () => void }) {
 
           {/* ── Sub-tabs ── */}
           <div className="flex border-b border-gray-100 bg-white">
-            {([['bills','บิล', <Receipt size={13} />], ['status','การชำระเงิน', <CreditCard size={13} />]] as const).map(([id, label, icon]) => (
+            {([['bills','บิล', Receipt], ['status','การชำระเงิน', CreditCard]] as const).map(([id, label, IconComponent]) => (
               <button
                 key={id}
                 onClick={() => setSubTab(id as DormSubTab)}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-3 border-b-2 transition-all ${subTab === id ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-400'}`}
                 style={{ fontSize: '12px', fontWeight: subTab === id ? 700 : 500 }}
               >
-                {icon}{label}
+                <IconComponent size={13} />{label}
               </button>
             ))}
           </div>
@@ -1693,14 +1693,14 @@ export default function DormPaymentPage({ onNavigate }: DormPaymentPageProps) {
         {/* Tab bar — only show when not in pay flow */}
         {!inPayFlow && (
           <div className="flex border-b border-gray-100">
-            {([['bills','บิล & ชำระ', <Receipt size={13} />], ['requests','คำขอเช่า', <ClipboardList size={13} />], ['review','รีวิวหอ', <Star size={13} />]] as const).map(([id, label, icon]) => (
+            {([['bills','บิล & ชำระ', Receipt], ['requests','คำขอเช่า', ClipboardList], ['review','รีวิวหอ', Star]] as const).map(([id, label, IconComponent]) => (
               <button
                 key={id}
                 onClick={() => setTab(id as Tab)}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-3 border-b-2 transition-all ${tab === id ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-400'}`}
                 style={{ fontSize: '12px', fontWeight: tab === id ? 700 : 500 }}
               >
-                {icon}{label}
+                <IconComponent size={13} />{label}
               </button>
             ))}
           </div>

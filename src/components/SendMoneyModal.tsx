@@ -16,6 +16,7 @@ export default function SendMoneyModal({ isOpen, onClose, onSendSuccess, userBal
   const [amount, setAmount] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [refId, setRefId] = useState<string>('');
 
   if (!isOpen) return null;
 
@@ -61,6 +62,8 @@ export default function SendMoneyModal({ isOpen, onClose, onSendSuccess, userBal
         icon: '💸'
       };
       
+      const generatedRefId = `TXN-${Math.floor(Math.random() * 90000000 + 10000000)}`;
+      setRefId(generatedRefId);
       onSendSuccess(newTx);
       setStep('success');
     }, 1800);
@@ -72,6 +75,7 @@ export default function SendMoneyModal({ isOpen, onClose, onSendSuccess, userBal
     setAmount('');
     setDescription('');
     setError('');
+    setRefId('');
     onClose();
   };
 
@@ -223,7 +227,7 @@ export default function SendMoneyModal({ isOpen, onClose, onSendSuccess, userBal
               <h2 className="text-3xl font-extrabold text-white mt-2">
                 ฿{parseFloat(amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </h2>
-              {description && <p className="text-xs text-slate-300 mt-2 font-light">"{description}"</p>}
+              {description && <p className="text-xs text-slate-300 mt-2 font-light">&quot;{description}&quot;</p>}
             </div>
 
             <div className="space-y-3.5">
@@ -287,7 +291,7 @@ export default function SendMoneyModal({ isOpen, onClose, onSendSuccess, userBal
                 </svg>
               </div>
               <h4 className="text-base font-bold text-white mt-4">Transfer Successful!</h4>
-              <p className="text-[10px] text-slate-400 mt-1">Ref ID: TXN-{Math.floor(Math.random() * 90000000 + 10000000)}</p>
+              <p className="text-[10px] text-slate-400 mt-1">Ref ID: {refId}</p>
             </div>
 
             <div className="bg-white/5 border border-glass-border rounded-xl p-4 space-y-3">
